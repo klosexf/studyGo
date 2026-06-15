@@ -23,3 +23,23 @@ test-results/
 Thumbs.db
 .idea/
 .vscode/
+
+# Build cache
+tsconfig.tsbuildinfo
+
+# AI / IDE workspace
+.superpowers/
+.trae/
+
+# Screenshots / temp images
+screenshot_*.png
+hint-panel-*.png
+
+# Root-level design prototypes (not app code)
+/*.html
+/test-*.js
+
+# Root-level historical docs (keep README.md and AGENTS.md explicitly)
+/*.md
+!README.md
+!AGENTS.md
