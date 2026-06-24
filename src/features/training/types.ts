@@ -1,5 +1,9 @@
 import type { z } from "zod";
 
+import type {
+  coachingFeedbackSchema,
+  plannedCoachingRoundSchema,
+} from "@/features/training/schemas/coaching";
 import type { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
 import type {
   dimensionScoreSchema,
@@ -50,6 +54,8 @@ export type TrainingTopic = z.infer<typeof trainingTopicSchema>;
 export type DimensionScore = z.infer<typeof dimensionScoreSchema>;
 export type DraftDiagnosis = z.infer<typeof draftDiagnosisSchema>;
 export type RewriteComparison = z.infer<typeof rewriteComparisonSchema>;
+export type PlannedCoachingRound = z.infer<typeof plannedCoachingRoundSchema>;
+export type CoachingFeedback = z.infer<typeof coachingFeedbackSchema>;
 
 export interface TrainingConfig {
   scenarioType: ScenarioType;

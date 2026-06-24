@@ -1,5 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
+import {
+  coachingFeedbackSchema,
+  plannedCoachingRoundSchema,
+} from "@/features/training/schemas/coaching";
 import { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
 import { draftDiagnosisSchema } from "@/features/training/schemas/diagnosis";
 import {
@@ -47,6 +51,14 @@ const validTopic = {
   },
 } as const;
 
+const validPlannedRound = {
+  id: "boundary",
+  objective: "立场与边界",
+  targetDimension: "hiddenAssumption",
+  question: "这个观点在什么条件下成立？",
+  successCriteria: "用户说出至少一个判断边界。",
+} as const;
+
 const validDiagnosis = {
   summary: "观点明确，但论证链条仍有缺口。",
   keyLogicIssue: "没有说明成长为何比短期稳定更重要。",
@@ -59,6 +71,7 @@ const validDiagnosis = {
   coverageCount: 8,
   confidence: "high",
   source: "real",
+  plannedCoachingRounds: [validPlannedRound],
 } as const;
 
 const validComparison = {
@@ -213,6 +226,69 @@ describe("score and diagnosis schemas", () => {
             ? { ...score, evidence: "长".repeat(501) }
             : score,
         ),
+      }),
+    ).toThrow();
+  });
+
+  it("accepts one to three planned coaching rounds and rejects duplicates", () => {
+    expect(plannedCoachingRoundSchema.parse(validPlannedRound).id).toBe(
+      "boundary",
+    );
+    expect(() =>
+      draftDiagnosisSchema.parse({
+        ...validDiagnosis,
+        plannedCoachingRounds: [],
+      }),
+    ).toThrow();
+    expect(() =>
+      draftDiagnosisSchema.parse({
+        ...validDiagnosis,
+        plannedCoachingRounds: [
+          validPlannedRound,
+          { ...validPlannedRound, question: "换一个问法？" },
+        ],
+      }),
+    ).toThrow();
+    expect(() =>
+      draftDiagnosisSchema.parse({
+        ...validDiagnosis,
+        plannedCoachingRounds: [
+          validPlannedRound,
+          {
+            ...validPlannedRound,
+            id: "evidence",
+            targetDimension: "argumentSufficiency",
+          },
+          {
+            ...validPlannedRound,
+            id: "structure",
+            targetDimension: "structureClarity",
+          },
+          {
+            ...validPlannedRound,
+            id: "extra",
+            targetDimension: "specificLanguage",
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("validates coaching feedback without accepting model-written final answers", () => {
+    const parsed = coachingFeedbackSchema.parse({
+      roundId: "boundary",
+      attempt: 1,
+      status: "needs_followup",
+      feedback: "你说到了风险，但还没有给出判断标准。",
+      capturedUserMaterial: ["裸辞风险比较大"],
+      gap: "需要补出一个条件。",
+      followUpQuestion: "从储蓄、机会、家庭压力里选一个条件说明。",
+    });
+    expect(parsed.status).toBe("needs_followup");
+    expect(() =>
+      coachingFeedbackSchema.parse({
+        ...parsed,
+        modelAnswer: "我认为年轻人不应该裸辞，除非已经具备充分储蓄。",
       }),
     ).toThrow();
   });

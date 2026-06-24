@@ -73,6 +73,15 @@ const modelDiagnosis = {
   coverageCount: 0,
   confidence: "medium",
   source: "mock",
+  plannedCoachingRounds: [
+    {
+      id: "argument",
+      objective: "理由与证据",
+      targetDimension: "argumentSufficiency",
+      question: "什么事实最能支持这个判断？",
+      successCriteria: "用户给出至少一个具体支撑材料。",
+    },
+  ],
 };
 
 const modelComparison = {

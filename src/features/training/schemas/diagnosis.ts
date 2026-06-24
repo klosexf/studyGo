@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { plannedCoachingRoundsSchema } from "@/features/training/schemas/coaching";
 import { trainingDimensionSchema } from "@/features/training/schemas/topic";
 import { TRAINING_DIMENSIONS } from "@/features/training/types";
 
@@ -53,6 +54,7 @@ export const draftDiagnosisSchema = z
     coverageCount: z.number().int().min(0).max(8),
     confidence: diagnosisConfidenceSchema,
     source: aiResultSourceSchema,
+    plannedCoachingRounds: plannedCoachingRoundsSchema,
   })
   .refine(({ coverageCount, scores }) => coverageCount === scores.length, {
     message: "Coverage count must match the number of dimension scores",

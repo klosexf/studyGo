@@ -95,6 +95,52 @@ const EVIDENCE: Record<TrainingDimension, string> = {
   conciseness: "检查篇幅是否适中且没有明显重复。",
 };
 
+const COACHING_OBJECTIVES: Record<
+  TrainingDimension,
+  { objective: string; question: string; successCriteria: string }
+> = {
+  structureClarity: {
+    objective: "结构与表达",
+    question: "如果要让别人更快听懂，你会先说什么、后说什么？",
+    successCriteria: "用户说明表达顺序或信息取舍。",
+  },
+  argumentSufficiency: {
+    objective: "理由与证据",
+    question: "有什么具体事实、经验或例子能支持这个判断？",
+    successCriteria: "用户给出至少一个具体支撑材料。",
+  },
+  hiddenAssumption: {
+    objective: "立场与边界",
+    question: "这个观点在什么条件下成立？有没有例外？",
+    successCriteria: "用户说出至少一个判断条件或边界。",
+  },
+  counterargumentAwareness: {
+    objective: "反方回应",
+    question: "反对你的人最可能怎么说？你如何回应？",
+    successCriteria: "用户概括一个反方理由并给出回应方向。",
+  },
+  clearConclusion: {
+    objective: "立场清晰",
+    question: "如果只能用一句话表达结论，你会怎么说？",
+    successCriteria: "用户给出一句明确可判断的主张。",
+  },
+  specificLanguage: {
+    objective: "具体表达",
+    question: "能不能补一个具体对象、动作或例子？",
+    successCriteria: "用户补出具体对象、动作或例子。",
+  },
+  smoothConnection: {
+    objective: "连接关系",
+    question: "这几个理由之间是什么关系：因果、递进还是转折？",
+    successCriteria: "用户说明句间逻辑关系。",
+  },
+  conciseness: {
+    objective: "表达压缩",
+    question: "如果删掉重复铺垫，只保留关键判断，你会保留哪几句？",
+    successCriteria: "用户能指出需要保留的关键判断。",
+  },
+};
+
 interface TextFeatures {
   length: number;
   conclusion: boolean;
@@ -225,6 +271,15 @@ function confidenceFor(length: number): DraftDiagnosis["confidence"] {
   return "low";
 }
 
+function plannedRoundFor(dimension: TrainingDimension) {
+  const objective = COACHING_OBJECTIVES[dimension];
+  return {
+    id: dimension,
+    targetDimension: dimension,
+    ...objective,
+  };
+}
+
 export const mockProvider: AIProvider = {
   async generateTopic(rawInput) {
     const input = topicRequestSchema.parse({
@@ -304,6 +359,7 @@ export const mockProvider: AIProvider = {
       coverageCount: TRAINING_DIMENSIONS.length,
       confidence: confidenceFor(features.length),
       source: "mock",
+      plannedCoachingRounds: [plannedRoundFor(weakestDimension)],
     });
   },
 

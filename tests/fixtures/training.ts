@@ -43,6 +43,14 @@ export function dimensionScores(
   }));
 }
 
+export const plannedCoachingRoundFixture = {
+  id: "boundary",
+  objective: "立场与边界",
+  targetDimension: "hiddenAssumption",
+  question: "这个观点在什么条件下成立？",
+  successCriteria: "用户说出至少一个判断边界。",
+} as const;
+
 export function diagnosisFixture(
   overrides: Partial<DraftDiagnosis> = {},
 ): DraftDiagnosis {
@@ -58,6 +66,7 @@ export function diagnosisFixture(
     coverageCount: 8,
     confidence: "medium",
     source: "mock",
+    plannedCoachingRounds: [plannedCoachingRoundFixture],
     ...overrides,
   };
 }
