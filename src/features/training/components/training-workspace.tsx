@@ -20,6 +20,10 @@ import {
 } from "@/features/dashboard/dashboard-selectors";
 import { HistoryDrawer } from "@/features/history/history-drawer";
 import {
+  CoachingView,
+  FinalRewriteView,
+} from "@/features/training/components/coaching-view";
+import {
   ProviderSettingsModal,
   type ProviderSettingsAdapter,
 } from "@/features/settings/provider-settings-modal";
@@ -57,6 +61,8 @@ const STAGE_HEADING_IDS: Record<TrainingStage, string> = {
   topic: "topic-title",
   draft: "draft-title",
   diagnosis: "diagnosis-title",
+  coaching: "coaching-title",
+  finalRewrite: "final-rewrite-title",
   result: "result-title",
 };
 const STAGE_ANNOUNCEMENTS: Record<TrainingStage, string> = {
@@ -64,17 +70,21 @@ const STAGE_ANNOUNCEMENTS: Record<TrainingStage, string> = {
   topic: "已进入第2步：命题",
   draft: "已进入第3步：初稿",
   diagnosis: "已进入第4步：诊断改写",
-  result: "已进入第5步：结果复盘",
+  coaching: "已进入第5步：教练追问",
+  finalRewrite: "已进入第6步：最终复述",
+  result: "已进入第7步：结果复盘",
 };
 const STAGE_HEADERS: Record<
   TrainingStage,
   { title: string; subtitle: string }
 > = {
-  setup: { title: "设置训练", subtitle: "第 1 步 / 5" },
-  topic: { title: "确认命题", subtitle: "第 2 步 / 5" },
-  draft: { title: "写初稿", subtitle: "第 3 步 / 5" },
-  diagnosis: { title: "诊断改写", subtitle: "第 4 步 / 5" },
-  result: { title: "结果复盘", subtitle: "第 5 步 / 5" },
+  setup: { title: "设置训练", subtitle: "第 1 步 / 7" },
+  topic: { title: "确认命题", subtitle: "第 2 步 / 7" },
+  draft: { title: "写初稿", subtitle: "第 3 步 / 7" },
+  diagnosis: { title: "诊断改写", subtitle: "第 4 步 / 7" },
+  coaching: { title: "教练追问", subtitle: "第 5 步 / 7" },
+  finalRewrite: { title: "最终复述", subtitle: "第 6 步 / 7" },
+  result: { title: "结果复盘", subtitle: "第 7 步 / 7" },
 };
 const HISTORY_GUARD_KEY = "__logicTrainerUnsavedResultGuard";
 const HISTORY_BASE_KEY = "__logicTrainerUnsavedResultBase";
@@ -287,6 +297,10 @@ function TrainingWorkspaceReady({
     } else if (session.stage === "draft") {
       void store.getState().requestDiagnosis().catch(() => undefined);
     } else if (session.stage === "diagnosis") {
+      store.getState().startCoaching();
+    } else if (session.stage === "coaching") {
+      void store.getState().requestCoachingFeedback().catch(() => undefined);
+    } else if (session.stage === "finalRewrite") {
       void store.getState().requestComparison().catch(() => undefined);
     }
   };
@@ -344,6 +358,7 @@ function TrainingWorkspaceReady({
           label={{
             topic: "正在生成训练命题…",
             diagnosis: "正在分析初稿…",
+            coaching: "正在追问反馈…",
             comparison: "正在对比两版表达…",
           }[state.loading]}
         />
@@ -551,8 +566,39 @@ function StageView({
         topic={session.topic}
         diagnosis={session.diagnosis}
         value={session.rewriteText}
-        loading={actions.loading === "comparison"}
+        loading={false}
         onChange={actions.updateRewrite}
+        onSubmit={actions.startCoaching}
+        onAbort={onAbortRewrite}
+        hideEditor
+        submitLabel="开始教练追问"
+      />
+    );
+  }
+  if (session.stage === "coaching") {
+    return (
+      <CoachingView
+        topic={session.topic}
+        diagnosis={session.diagnosis}
+        rounds={session.coachingRounds}
+        currentRoundIndex={session.currentRoundIndex}
+        value={session.currentAnswer}
+        loading={actions.loading === "coaching"}
+        onChange={actions.updateCoachingAnswer}
+        onSubmit={() =>
+          void actions.requestCoachingFeedback().catch(() => undefined)
+        }
+        onContinue={actions.startFinalRewrite}
+      />
+    );
+  }
+  if (session.stage === "finalRewrite") {
+    return (
+      <FinalRewriteView
+        topic={session.topic}
+        value={session.finalRewriteText}
+        loading={actions.loading === "comparison"}
+        onChange={actions.updateFinalRewrite}
         onSubmit={() =>
           void actions.requestComparison().catch(() => undefined)
         }
@@ -604,6 +650,8 @@ function TrainingInsights({
     topic: ["读清约束", "先识别问题中的冲突，再决定立场。"],
     draft: ["先完成再优化", "用结论、理由、例子和回应组织初稿。"],
     diagnosis: ["自己完成改写", "诊断提供方向，不替代你的表达。"],
+    coaching: ["看见因果链", "围绕初稿短板，一轮一轮补齐表达材料。"],
+    finalRewrite: ["整合自己的答案", "把追问中补出的材料组织进最终复述。"],
     result: ["关注迁移", "把本次最低维度带到下一次训练。"],
   }[session.stage];
   return (

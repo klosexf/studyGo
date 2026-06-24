@@ -16,6 +16,8 @@ export const TRAINING_STAGES = [
   "topic",
   "draft",
   "diagnosis",
+  "coaching",
+  "finalRewrite",
   "result",
 ] as const;
 
@@ -71,8 +73,16 @@ export interface TrainingSessionBase {
   config: TrainingConfig;
   draftText: string;
   rewriteText: string;
+  finalRewriteText?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CoachingRoundState {
+  planned: PlannedCoachingRound;
+  attempts: CoachingFeedback[];
+  userAnswers: string[];
+  status: "pending" | "passed" | "recorded_weakness";
 }
 
 export type TrainingSession =
@@ -101,15 +111,36 @@ export type TrainingSession =
       comparison?: never;
     })
   | (TrainingSessionBase & {
+      stage: "coaching";
+      topic: TrainingTopic;
+      diagnosis: DraftDiagnosis;
+      coachingRounds: CoachingRoundState[];
+      currentRoundIndex: number;
+      currentAnswer: string;
+      comparison?: never;
+    })
+  | (TrainingSessionBase & {
+      stage: "finalRewrite";
+      topic: TrainingTopic;
+      diagnosis: DraftDiagnosis;
+      coachingRounds: CoachingRoundState[];
+      finalRewriteText: string;
+      comparison?: never;
+    })
+  | (TrainingSessionBase & {
       stage: "result";
       topic: TrainingTopic;
       diagnosis: DraftDiagnosis;
+      coachingRounds?: CoachingRoundState[];
+      finalRewriteText?: string;
       comparison: RewriteComparison;
     });
 
 export interface TrainingRecord extends TrainingSessionBase {
   topic: TrainingTopic;
   diagnosis: DraftDiagnosis;
+  coachingRounds?: CoachingRoundState[];
+  finalRewriteText?: string;
   comparison: RewriteComparison;
   weakestDimension: TrainingDimension;
   draftLogicScore: Score;

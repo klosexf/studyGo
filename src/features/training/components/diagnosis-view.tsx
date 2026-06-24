@@ -19,6 +19,9 @@ export function DiagnosisView({
   onChange,
   onSubmit,
   onAbort,
+  submitLabel = "查看结果复盘",
+  loadingLabel = "正在对比…",
+  hideEditor = false,
 }: {
   topic: TrainingTopic;
   diagnosis: DraftDiagnosis;
@@ -27,6 +30,9 @@ export function DiagnosisView({
   onChange: (value: string) => void;
   onSubmit: () => void;
   onAbort: () => void;
+  submitLabel?: string;
+  loadingLabel?: string;
+  hideEditor?: boolean;
 }) {
   const [touched, setTouched] = useState(false);
   const count = countCharacters(value);
@@ -74,28 +80,34 @@ export function DiagnosisView({
             <strong>{topic.title}</strong>
             <p>{topic.mainQuestion}</p>
           </Card>
-          <label className="editor-field">
-            <span>二次改写</span>
-            <textarea
-              aria-label="二次改写"
-              aria-invalid={showError}
-              aria-describedby={showError ? `${countId} ${errorId}` : countId}
-              value={value}
-              onChange={(event) => onChange(event.target.value)}
-              onBlur={() => setTouched(true)}
-              placeholder="根据诊断重新组织自己的表达。"
-            />
-          </label>
-          <div className="editor-meta">
-            <span id={countId} data-invalid={showError}>
-              {count} / 400
-            </span>
-          </div>
-          {showError ? (
-            <p id={errorId} role="alert" className="field-error">
-              请输入 200 至 400 个字符
-            </p>
-          ) : null}
+          {hideEditor ? null : (
+            <>
+              <label className="editor-field">
+                <span>二次改写</span>
+                <textarea
+                  aria-label="二次改写"
+                  aria-invalid={showError}
+                  aria-describedby={
+                    showError ? `${countId} ${errorId}` : countId
+                  }
+                  value={value}
+                  onChange={(event) => onChange(event.target.value)}
+                  onBlur={() => setTouched(true)}
+                  placeholder="根据诊断重新组织自己的表达。"
+                />
+              </label>
+              <div className="editor-meta">
+                <span id={countId} data-invalid={showError}>
+                  {count} / 400
+                </span>
+              </div>
+              {showError ? (
+                <p id={errorId} role="alert" className="field-error">
+                  请输入 200 至 400 个字符
+                </p>
+              ) : null}
+            </>
+          )}
           <div className="training-actions">
             <Button
               variant="danger"
@@ -106,10 +118,10 @@ export function DiagnosisView({
             </Button>
             <Button
               variant="primary"
-              disabled={!validTrainingText(value) || loading}
+              disabled={(!hideEditor && !validTrainingText(value)) || loading}
               onClick={onSubmit}
             >
-              {loading ? "正在对比…" : "查看结果复盘"}
+              {loading ? loadingLabel : submitLabel}
             </Button>
           </div>
         </div>

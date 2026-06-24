@@ -27,6 +27,7 @@ import {
   type TrainingStoreDependencies,
 } from "@/features/training/store/training-store";
 import type {
+  CoachingFeedback,
   TrainingSession,
   TrainingTopic,
 } from "@/features/training/types";
@@ -100,6 +101,40 @@ function advanceToDraft(store: TrainingStore) {
   store.getState().updateDraft("保留这段初稿");
 }
 
+function advanceToFinalRewrite(store: TrainingStore, text = "最终复述文本") {
+  advanceToDraft(store);
+  store.getState().setDiagnosis(diagnosisFixture());
+  store.getState().startCoaching();
+  store.getState().updateCoachingAnswer("至少需要 6 个月生活费。");
+  const session = store.getState().session;
+  if (session?.stage !== "coaching") {
+    throw new Error("Expected coaching session");
+  }
+  store.getState().restoreSession({
+    ...session,
+    coachingRounds: session.coachingRounds.map((round) => ({
+      ...round,
+      attempts: [coachingFeedbackFixture({ status: "passed" })],
+      userAnswers: ["至少需要 6 个月生活费。"],
+      status: "passed" as const,
+    })),
+  });
+  store.getState().startFinalRewrite();
+  store.getState().updateFinalRewrite(text);
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
+const validFinalRewrite = "复".repeat(200);
+
 describe("training store", () => {
   it("starts with mock when the selected real provider is invalid", () => {
     const store = createStore();
@@ -122,7 +157,23 @@ describe("training store", () => {
     const store = createStore();
     advanceToDraft(store);
     store.getState().setDiagnosis(diagnosisFixture());
-    store.getState().updateRewrite("用户自己的改写");
+    store.getState().startCoaching();
+    store.getState().updateCoachingAnswer("至少需要 6 个月生活费。");
+    const coachingSession = store.getState().session;
+    if (coachingSession?.stage !== "coaching") {
+      throw new Error("Expected coaching session");
+    }
+    store.getState().restoreSession({
+      ...coachingSession,
+      coachingRounds: coachingSession.coachingRounds.map((round) => ({
+        ...round,
+        attempts: [coachingFeedbackFixture({ status: "passed" })],
+        userAnswers: ["至少需要 6 个月生活费。"],
+        status: "passed" as const,
+      })),
+    });
+    store.getState().startFinalRewrite();
+    store.getState().updateFinalRewrite("用户自己的最终复述");
     store.getState().setComparison(comparisonFixture());
 
     expect(store.getState().session).toMatchObject({
@@ -131,11 +182,84 @@ describe("training store", () => {
       diagnosis: diagnosisFixture(),
       comparison: comparisonFixture(),
       draftText: "保留这段初稿",
-      rewriteText: "用户自己的改写",
+      finalRewriteText: "用户自己的最终复述",
+      rewriteText: "用户自己的最终复述",
     });
 
     store.getState().goBack();
     expect(store.getState().session?.stage).toBe("setup");
+  });
+
+  it("runs coaching rounds before final rewrite comparison", async () => {
+    const api = createApi();
+    vi.mocked(api.coachRound).mockResolvedValue(
+      coachingFeedbackFixture({ status: "passed" }),
+    );
+    const store = createStore({ api });
+    advanceToDraft(store);
+    await store.getState().requestDiagnosis();
+
+    expect(store.getState().session?.stage).toBe("diagnosis");
+    store.getState().startCoaching();
+    expect(store.getState().session?.stage).toBe("coaching");
+
+    store.getState().updateCoachingAnswer("至少需要 6 个月生活费。");
+    await store.getState().requestCoachingFeedback();
+    expect(api.coachRound).toHaveBeenCalledTimes(1);
+    expect(store.getState().session).toMatchObject({
+      stage: "coaching",
+      currentRoundIndex: 0,
+      coachingRounds: [
+        {
+          attempts: [expect.objectContaining({ status: "passed" })],
+          userAnswers: ["至少需要 6 个月生活费。"],
+          status: "passed",
+        },
+      ],
+    });
+
+    store.getState().startFinalRewrite();
+    expect(store.getState().session?.stage).toBe("finalRewrite");
+    store.getState().updateFinalRewrite(validFinalRewrite);
+    await store.getState().requestComparison();
+    expect(store.getState().session).toMatchObject({
+      stage: "result",
+      finalRewriteText: validFinalRewrite,
+      rewriteText: validFinalRewrite,
+    });
+  });
+
+  it("does not write stale coaching feedback after answer changes", async () => {
+    const pending = deferred<CoachingFeedback>();
+    const api = createApi();
+    vi.mocked(api.coachRound).mockReturnValueOnce(pending.promise);
+    const store = createStore({ api });
+    advanceToDraft(store);
+    store.getState().setDiagnosis(diagnosisFixture());
+    store.getState().startCoaching();
+    store.getState().updateCoachingAnswer("第一版回答");
+    const request = store
+      .getState()
+      .requestCoachingFeedback()
+      .catch(() => undefined);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    store.getState().updateCoachingAnswer("第二版回答");
+    pending.resolve(coachingFeedbackFixture());
+    await request;
+
+    expect(store.getState().session).toMatchObject({
+      stage: "coaching",
+      currentAnswer: "第二版回答",
+      coachingRounds: [
+        {
+          attempts: [],
+          userAnswers: [],
+          status: "pending",
+        },
+      ],
+    });
   });
 
   it("marks every new local session snapshot as needing persistence", () => {
@@ -169,7 +293,33 @@ describe("training store", () => {
     expect(store.getState().saveStatus).toBe("idle");
 
     store.getState().setSaveStatus("saved");
-    store.getState().updateRewrite("新的改写快照");
+    store.getState().startCoaching();
+    expect(store.getState().saveStatus).toBe("idle");
+
+    store.getState().setSaveStatus("saved");
+    store.getState().updateCoachingAnswer("新的追问回答");
+    expect(store.getState().saveStatus).toBe("idle");
+
+    const coachingSession = store.getState().session;
+    if (coachingSession?.stage !== "coaching") {
+      throw new Error("Expected coaching session");
+    }
+    store.getState().restoreSession({
+      ...coachingSession,
+      coachingRounds: coachingSession.coachingRounds.map((round) => ({
+        ...round,
+        attempts: [coachingFeedbackFixture({ status: "passed" })],
+        userAnswers: ["新的追问回答"],
+        status: "passed" as const,
+      })),
+    });
+
+    store.getState().setSaveStatus("saved");
+    store.getState().startFinalRewrite();
+    expect(store.getState().saveStatus).toBe("idle");
+
+    store.getState().setSaveStatus("saved");
+    store.getState().updateFinalRewrite("新的最终复述快照");
     expect(store.getState().saveStatus).toBe("idle");
 
     store.getState().setSaveStatus("saved");
@@ -226,9 +376,7 @@ describe("training store", () => {
     expect(diagnosisStore.getState().saveStatus).toBe("idle");
 
     const comparisonStore = createStore();
-    advanceToDraft(comparisonStore);
-    comparisonStore.getState().setDiagnosis(diagnosisFixture());
-    comparisonStore.getState().updateRewrite("等待 AI 对比的改写");
+    advanceToFinalRewrite(comparisonStore, "等待 AI 对比的改写");
     await comparisonStore.getState().requestComparison();
     expect(comparisonStore.getState().session?.stage).toBe("result");
     expect(comparisonStore.getState().saveStatus).toBe("idle");
@@ -358,9 +506,7 @@ describe("training store", () => {
     {
       operation: "comparison",
       prepare(store: TrainingStore) {
-        advanceToDraft(store);
-        store.getState().setDiagnosis(diagnosisFixture());
-        store.getState().updateRewrite("改写文本");
+        advanceToFinalRewrite(store, "改写文本");
       },
       request(store: TrainingStore) {
         return store.getState().requestComparison();
@@ -572,19 +718,18 @@ describe("training store", () => {
       },
     );
     const store = createStore({ api });
-    advanceToDraft(store);
-    store.getState().setDiagnosis(diagnosisFixture());
-    store.getState().updateRewrite("第一版改写");
+    advanceToFinalRewrite(store, "第一版改写");
     const request = store.getState().requestComparison();
     await Promise.resolve();
     await Promise.resolve();
 
-    store.getState().updateRewrite("请求发出后修改的改写");
+    store.getState().updateFinalRewrite("请求发出后修改的改写");
     resolveComparison();
     await Promise.allSettled([request]);
 
     expect(store.getState().session).toMatchObject({
-      stage: "diagnosis",
+      stage: "finalRewrite",
+      finalRewriteText: "请求发出后修改的改写",
       rewriteText: "请求发出后修改的改写",
     });
   });
@@ -634,9 +779,7 @@ describe("training store", () => {
       })
       .mockResolvedValueOnce(replacement);
     const store = createStore({ api });
-    advanceToDraft(store);
-    store.getState().setDiagnosis(diagnosisFixture());
-    store.getState().updateRewrite("改写文本");
+    advanceToFinalRewrite(store, "改写文本");
 
     const stale = store.getState().requestComparison();
     const current = store.getState().requestComparison();

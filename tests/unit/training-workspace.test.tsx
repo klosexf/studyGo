@@ -152,7 +152,19 @@ async function reachDiagnosis() {
   fireEvent.change(draft, { target: { value: text(200) } });
   await userEvent.click(screen.getByRole("button", { name: "提交初稿诊断" }));
   await screen.findByRole("heading", { name: "诊断与改写" });
-  return screen.getByRole("textbox", { name: "二次改写" });
+}
+
+async function reachFinalRewrite() {
+  await reachDiagnosis();
+  await userEvent.click(screen.getByRole("button", { name: "开始教练追问" }));
+  await screen.findByRole("heading", { name: "教练追问" });
+  const answer = screen.getByRole("textbox", { name: "追问回答" });
+  fireEvent.change(answer, { target: { value: "至少需要保留基本生活保障。" } });
+  await userEvent.click(screen.getByRole("button", { name: "发送回答" }));
+  await screen.findByRole("button", { name: "进入最终复述" });
+  await userEvent.click(screen.getByRole("button", { name: "进入最终复述" }));
+  await screen.findByRole("heading", { name: "最终复述" });
+  return screen.getByRole("textbox", { name: "最终复述" });
 }
 
 describe("TrainingWorkspace", () => {
@@ -164,7 +176,7 @@ describe("TrainingWorkspace", () => {
     window.localStorage.clear();
   });
 
-  it("completes the five-stage mock flow and records accurate results once", async () => {
+  it("completes the structured coaching flow and records accurate results once", async () => {
     const repository = createRepository();
     const api = createApi();
     await renderWorkspace({ repository, api });
@@ -181,7 +193,15 @@ describe("TrainingWorkspace", () => {
     expect(screen.getByRole("button", { name: "提交初稿诊断" })).toBeEnabled();
     await userEvent.click(screen.getByRole("button", { name: "提交初稿诊断" }));
 
-    const rewrite = await screen.findByRole("textbox", { name: "二次改写" });
+    await screen.findByRole("heading", { name: "诊断与改写" });
+    await userEvent.click(screen.getByRole("button", { name: "开始教练追问" }));
+    await screen.findByRole("heading", { name: "教练追问" });
+    const answer = screen.getByRole("textbox", { name: "追问回答" });
+    fireEvent.change(answer, { target: { value: "至少需要保留基本生活保障。" } });
+    await userEvent.click(screen.getByRole("button", { name: "发送回答" }));
+    await screen.findByRole("button", { name: "进入最终复述" });
+    await userEvent.click(screen.getByRole("button", { name: "进入最终复述" }));
+    const rewrite = await screen.findByRole("textbox", { name: "最终复述" });
     expect(screen.getByRole("button", { name: "查看结果复盘" })).toBeDisabled();
     fireEvent.change(rewrite, { target: { value: text(200) } });
     await userEvent.click(screen.getByRole("button", { name: "查看结果复盘" }));
@@ -199,6 +219,7 @@ describe("TrainingWorkspace", () => {
     });
     expect(api.generateTopic).toHaveBeenCalledTimes(1);
     expect(api.diagnoseDraft).toHaveBeenCalledTimes(1);
+    expect(api.coachRound).toHaveBeenCalledTimes(1);
     expect(api.compareRewrite).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -212,7 +233,7 @@ describe("TrainingWorkspace", () => {
     render(<StageTabs stage="draft" onBack={onBack} />);
 
     const progress = screen.getByRole("navigation", { name: "训练进度" });
-    expect(progress.querySelectorAll("ol > li")).toHaveLength(5);
+    expect(progress.querySelectorAll("ol > li")).toHaveLength(7);
     expect(screen.queryAllByRole("tab")).toHaveLength(0);
     expect(screen.getByText("写初稿").closest("li")).toHaveAttribute(
       "aria-current",
@@ -237,7 +258,7 @@ describe("TrainingWorkspace", () => {
         name: "搜索命题、训练记录或短板",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("第 1 步 / 5")).toBeInTheDocument();
+    expect(screen.getByText("第 1 步 / 7")).toBeInTheDocument();
     expect(screen.getByText("确认命题")).toBeInTheDocument();
     expect(screen.getByText("写初稿")).toBeInTheDocument();
     expect(
@@ -421,7 +442,15 @@ describe("TrainingWorkspace", () => {
       expect(screen.getByText(score.evidence)).toBeInTheDocument();
     }
 
-    fireEvent.change(screen.getByRole("textbox", { name: "二次改写" }), {
+    await userEvent.click(screen.getByRole("button", { name: "开始教练追问" }));
+    await screen.findByRole("heading", { name: "教练追问" });
+    fireEvent.change(screen.getByRole("textbox", { name: "追问回答" }), {
+      target: { value: "至少需要保留基本生活保障。" },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "发送回答" }));
+    await screen.findByRole("button", { name: "进入最终复述" });
+    await userEvent.click(screen.getByRole("button", { name: "进入最终复述" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "最终复述" }), {
       target: { value: text(200) },
     });
     await userEvent.click(screen.getByRole("button", { name: "查看结果复盘" }));
@@ -453,7 +482,7 @@ describe("TrainingWorkspace", () => {
         vi.mocked(repository.getActiveSession).mockResolvedValue(null);
       });
     await renderWorkspace({ repository });
-    const rewrite = await reachDiagnosis();
+    const rewrite = await reachFinalRewrite();
     fireEvent.change(rewrite, { target: { value: text(200) } });
     await userEvent.click(screen.getByRole("button", { name: "查看结果复盘" }));
 
@@ -504,7 +533,7 @@ describe("TrainingWorkspace", () => {
       new Error("storage unavailable"),
     );
     await renderWorkspace({ repository });
-    const rewrite = await reachDiagnosis();
+    const rewrite = await reachFinalRewrite();
     fireEvent.change(rewrite, { target: { value: text(200) } });
     await userEvent.click(screen.getByRole("button", { name: "查看结果复盘" }));
     await screen.findByText(/训练记录保存失败/);
@@ -693,7 +722,7 @@ describe("TrainingWorkspace", () => {
       <TrainingWorkspace repository={repository} api={createApi()} />,
     );
     await screen.findByRole("heading", { name: "设置训练" });
-    const rewrite = await reachDiagnosis();
+    const rewrite = await reachFinalRewrite();
     fireEvent.change(rewrite, { target: { value: text(200) } });
     await userEvent.click(screen.getByRole("button", { name: "查看结果复盘" }));
     await screen.findByText("训练记录已保存");
@@ -731,7 +760,7 @@ describe("TrainingWorkspace", () => {
 
   it("enforces Unicode draft and rewrite limits at 200 to 400 characters", async () => {
     await renderWorkspace();
-    const rewrite = await reachDiagnosis();
+    const rewrite = await reachFinalRewrite();
 
     fireEvent.change(rewrite, { target: { value: text(401) } });
     expect(screen.getByText("401 / 400")).toBeInTheDocument();

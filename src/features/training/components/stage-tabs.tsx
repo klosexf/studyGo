@@ -8,6 +8,8 @@ const LABELS: Record<TrainingStage, string> = {
   topic: "确认命题",
   draft: "写初稿",
   diagnosis: "诊断改写",
+  coaching: "教练追问",
+  finalRewrite: "最终复述",
   result: "结果复盘",
 };
 

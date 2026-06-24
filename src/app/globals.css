@@ -793,6 +793,69 @@ textarea {
   color: #a43a34;
 }
 
+.coaching-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.coaching-thread {
+  max-height: 560px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: #f7f5ee;
+}
+
+.chat-bubble {
+  width: min(78%, 620px);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--ivory);
+  line-height: 1.7;
+}
+
+.chat-bubble--coach {
+  align-self: flex-start;
+  border-top-left-radius: 6px;
+}
+
+.chat-bubble--user {
+  align-self: flex-end;
+  border-top-right-radius: 6px;
+  background: #e8efe4;
+}
+
+.chat-bubble p,
+.chat-bubble small {
+  margin: 0;
+}
+
+.chat-bubble small {
+  color: #6d6f67;
+}
+
+.coaching-composer {
+  position: sticky;
+  bottom: 0;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.coaching-composer .editor-field textarea {
+  min-height: 132px;
+}
+
 .diagnosis-grid {
   align-items: start;
 }

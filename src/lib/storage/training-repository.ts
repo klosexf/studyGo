@@ -1,6 +1,10 @@
 import Dexie, { type Table } from "dexie";
 import { z } from "zod";
 
+import {
+  coachingFeedbackSchema,
+  plannedCoachingRoundSchema,
+} from "@/features/training/schemas/coaching";
 import { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
 import { draftDiagnosisSchema } from "@/features/training/schemas/diagnosis";
 import {
@@ -37,9 +41,17 @@ const sessionBaseShape = {
   config: trainingConfigSchema,
   draftText: z.string(),
   rewriteText: z.string(),
+  finalRewriteText: z.string().optional(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
 };
+
+const coachingRoundStateSchema = z.object({
+  planned: plannedCoachingRoundSchema,
+  attempts: z.array(coachingFeedbackSchema).max(3),
+  userAnswers: z.array(z.string()).max(3),
+  status: z.enum(["pending", "passed", "recorded_weakness"]),
+});
 
 const trainingSessionSchema: z.ZodType<TrainingSession> =
   z.discriminatedUnion("stage", [
@@ -65,10 +77,28 @@ const trainingSessionSchema: z.ZodType<TrainingSession> =
     }),
     z.object({
       ...sessionBaseShape,
+      stage: z.literal("coaching"),
+      topic: trainingTopicSchema,
+      diagnosis: draftDiagnosisSchema,
+      coachingRounds: z.array(coachingRoundStateSchema).min(1).max(3),
+      currentRoundIndex: z.number().int().min(0).max(2),
+      currentAnswer: z.string(),
+    }),
+    z.object({
+      ...sessionBaseShape,
+      stage: z.literal("finalRewrite"),
+      topic: trainingTopicSchema,
+      diagnosis: draftDiagnosisSchema,
+      coachingRounds: z.array(coachingRoundStateSchema).min(1).max(3),
+      finalRewriteText: z.string(),
+    }),
+    z.object({
+      ...sessionBaseShape,
       stage: z.literal("result"),
       topic: trainingTopicSchema,
       diagnosis: draftDiagnosisSchema,
       comparison: rewriteComparisonSchema,
+      coachingRounds: z.array(coachingRoundStateSchema).min(1).max(3).optional(),
     }),
   ]);
 
@@ -77,6 +107,7 @@ const trainingRecordSchema: z.ZodType<TrainingRecord> = z.object({
   topic: trainingTopicSchema,
   diagnosis: draftDiagnosisSchema,
   comparison: rewriteComparisonSchema,
+  coachingRounds: z.array(coachingRoundStateSchema).min(1).max(3).optional(),
   weakestDimension: trainingDimensionSchema,
   draftLogicScore: z.number().min(1).max(5),
   draftExpressionScore: z.number().min(1).max(5),

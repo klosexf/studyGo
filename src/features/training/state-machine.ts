@@ -4,7 +4,9 @@ const transitions = {
   setup: ["topic"],
   topic: ["setup", "draft"],
   draft: ["topic", "diagnosis"],
-  diagnosis: ["result"],
+  diagnosis: ["coaching"],
+  coaching: ["finalRewrite"],
+  finalRewrite: ["result"],
   result: ["setup"],
 } as const satisfies Record<TrainingStage, readonly TrainingStage[]>;
 

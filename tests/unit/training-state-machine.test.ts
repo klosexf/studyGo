@@ -11,6 +11,8 @@ const stages: TrainingStage[] = [
   "topic",
   "draft",
   "diagnosis",
+  "coaching",
+  "finalRewrite",
   "result",
 ];
 
@@ -20,7 +22,9 @@ const allowedTransitions = new Set([
   "topic:draft",
   "draft:topic",
   "draft:diagnosis",
-  "diagnosis:result",
+  "diagnosis:coaching",
+  "coaching:finalRewrite",
+  "finalRewrite:result",
   "result:setup",
 ]);
 

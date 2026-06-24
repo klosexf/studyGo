@@ -22,8 +22,10 @@ import {
   type CorruptTrainingData,
 } from "@/lib/storage/training-repository";
 import {
+  coachingFeedbackFixture,
   comparisonFixture,
   diagnosisFixture,
+  plannedCoachingRoundFixture,
   trainingRecord,
   trainingTopic,
 } from "@/../tests/fixtures/training";
@@ -76,6 +78,54 @@ describe("TrainingRepository", () => {
     expect(await repository.getActiveSession()).toEqual(draft);
     await repository.deleteSession(draft.id);
     expect(await repository.getActiveSession()).toBeNull();
+  });
+
+  it("saves and restores an active coaching session", async () => {
+    const coachingSession = session({
+      stage: "coaching",
+      topic: trainingTopic,
+      diagnosis: diagnosisFixture(),
+      coachingRounds: [
+        {
+          planned: plannedCoachingRoundFixture,
+          attempts: [],
+          userAnswers: ["稳定不是绝对前提，要看风险承受能力。"],
+          status: "pending",
+        },
+      ],
+      currentRoundIndex: 0,
+      currentAnswer: "稳定不是绝对前提，要看风险承受能力。",
+    });
+
+    await repository.saveSession(coachingSession);
+
+    expect(await repository.getActiveSession()).toEqual(coachingSession);
+  });
+
+  it("saves and restores an active final rewrite session", async () => {
+    const finalRewriteSession = session({
+      stage: "finalRewrite",
+      topic: trainingTopic,
+      diagnosis: diagnosisFixture(),
+      coachingRounds: [
+        {
+          planned: plannedCoachingRoundFixture,
+          attempts: [coachingFeedbackFixture()],
+          userAnswers: ["至少要保证基本生活安全。"],
+          status: "passed",
+        },
+      ],
+      finalRewriteText:
+        "我认为职业早期应优先成长，但前提是基本生活风险可控。",
+      rewriteText:
+        "我认为职业早期应优先成长，但前提是基本生活风险可控。",
+    });
+
+    await repository.saveSession(finalRewriteSession);
+
+    expect(await repository.getActiveSession()).toEqual(
+      finalRewriteSession,
+    );
   });
 
   it("deletes a session only when the persisted snapshot is unchanged", async () => {
@@ -213,6 +263,28 @@ describe("TrainingRepository", () => {
 
     expect(await repository.getRecord(record.id)).toEqual(record);
     expect(await db.sessions.get(record.id)).toBeUndefined();
+  });
+
+  it("preserves coaching data on completed records", async () => {
+    const record = trainingRecord({
+      coachingRounds: [
+        {
+          planned: plannedCoachingRoundFixture,
+          attempts: [coachingFeedbackFixture()],
+          userAnswers: ["至少要保证基本生活安全。"],
+          status: "passed",
+        },
+      ],
+      finalRewriteText:
+        "我认为职业早期应优先成长，但前提是基本生活风险可控。",
+      rewriteText:
+        "我认为职业早期应优先成长，但前提是基本生活风险可控。",
+    });
+
+    await repository.completeSession(record);
+
+    expect(await repository.getRecord(record.id)).toEqual(record);
+    expect(await repository.listRecords()).toEqual([record]);
   });
 
   it("lists records by completedAt descending and supports lookup", async () => {

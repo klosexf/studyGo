@@ -15,6 +15,8 @@ import {
   type TrainingApi,
 } from "@/features/training/services/training-api";
 import type {
+  CoachingFeedback,
+  CoachingRoundState,
   DraftDiagnosis,
   RewriteComparison,
   TrainingConfig,
@@ -23,7 +25,7 @@ import type {
 } from "@/features/training/types";
 import { TrainingRepository } from "@/lib/storage/training-repository";
 
-export type AiOperation = "topic" | "diagnosis" | "comparison";
+export type AiOperation = "topic" | "diagnosis" | "coaching" | "comparison";
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export interface TrainingStoreState {
@@ -39,6 +41,11 @@ export interface TrainingStoreState {
   startDraft(): void;
   updateDraft(text: string): void;
   setDiagnosis(diagnosis: DraftDiagnosis): void;
+  startCoaching(): void;
+  updateCoachingAnswer(text: string): void;
+  requestCoachingFeedback(): Promise<void>;
+  startFinalRewrite(): void;
+  updateFinalRewrite(text: string): void;
   updateRewrite(text: string): void;
   setComparison(comparison: RewriteComparison): void;
   goBack(): void;
@@ -211,6 +218,51 @@ export function createTrainingStore(
       }
     };
 
+    const applyCoachingFeedback = (feedback: CoachingFeedback) => {
+      const session = get().session;
+      if (!session || session.stage !== "coaching") {
+        return;
+      }
+      const currentRound = session.coachingRounds[session.currentRoundIndex];
+      if (!currentRound || currentRound.planned.id !== feedback.roundId) {
+        return;
+      }
+      const terminal =
+        feedback.status === "passed" ||
+        feedback.status === "recorded_weakness";
+      const updatedRounds = session.coachingRounds.map((round, index) => {
+        if (index !== session.currentRoundIndex) {
+          return round;
+        }
+        const status: CoachingRoundState["status"] =
+          feedback.status === "passed" ||
+          feedback.status === "recorded_weakness"
+            ? feedback.status
+            : "pending";
+        return {
+          ...round,
+          attempts: [...round.attempts, feedback],
+          userAnswers: [...round.userAnswers, session.currentAnswer],
+          status,
+        };
+      });
+      const nextIndex =
+        terminal && session.currentRoundIndex < updatedRounds.length - 1
+          ? session.currentRoundIndex + 1
+          : session.currentRoundIndex;
+      set({
+        session: {
+          ...session,
+          coachingRounds: updatedRounds,
+          currentRoundIndex: nextIndex,
+          currentAnswer: terminal ? "" : session.currentAnswer,
+          updatedAt: updatedAt(),
+        },
+        error: null,
+        saveStatus: "idle",
+      });
+    };
+
     return {
       session: null,
       loading: null,
@@ -333,6 +385,144 @@ export function createTrainingStore(
         });
       },
 
+      startCoaching() {
+        const session = requireSession();
+        if (session.stage !== "diagnosis") {
+          return failStage("追问训练只能从 diagnosis stage 开始。");
+        }
+        assertTransition(session.stage, "coaching");
+        set({
+          session: {
+            ...session,
+            stage: "coaching",
+            coachingRounds: session.diagnosis.plannedCoachingRounds.map(
+              (planned): CoachingRoundState => ({
+                planned,
+                attempts: [],
+                userAnswers: [],
+                status: "pending",
+              }),
+            ),
+            currentRoundIndex: 0,
+            currentAnswer: "",
+            updatedAt: updatedAt(),
+          },
+          error: null,
+          saveStatus: "idle",
+          requestRevision: get().requestRevision + 1,
+        });
+      },
+
+      updateCoachingAnswer(text) {
+        const session = requireSession();
+        if (session.stage !== "coaching") {
+          return failStage("追问回答只能在 coaching stage 修改。");
+        }
+        invalidateOperation("coaching");
+        set({
+          session: {
+            ...session,
+            currentAnswer: text,
+            updatedAt: updatedAt(),
+          },
+          error: null,
+          saveStatus: "idle",
+          requestRevision: get().requestRevision + 1,
+        });
+      },
+
+      async requestCoachingFeedback() {
+        const session = requireSession();
+        if (session.stage !== "coaching") {
+          return failStage("只能在 coaching stage 请求追问反馈。");
+        }
+        const currentRound = session.coachingRounds[session.currentRoundIndex];
+        if (!currentRound) {
+          return failStage("当前没有可请求的追问轮次。");
+        }
+        const request = beginRequest(
+          "coaching",
+          requestFingerprint("coaching", session),
+        );
+        try {
+          await saveBeforeRequest(session);
+          const feedback = await api.coachRound(
+            {
+              provider: providerForSession(session, settingsLoader()),
+              topic: session.topic,
+              draftText: session.draftText,
+              diagnosis: session.diagnosis,
+              plannedRound: currentRound.planned,
+              previousRounds: session.coachingRounds.flatMap((round) =>
+                round.attempts,
+              ),
+              userAnswer: session.currentAnswer,
+              attempt: currentRound.attempts.length + 1,
+            },
+            request.controller.signal,
+          );
+          if (
+            isCurrentRequest(
+              "coaching",
+              request.id,
+              session.id,
+              "coaching",
+              request.revision,
+              request.fingerprint,
+            )
+          ) {
+            applyCoachingFeedback(feedback);
+          }
+        } catch (error) {
+          handleRequestError("coaching", request.id, error);
+        } finally {
+          finishRequest("coaching", request.id);
+        }
+      },
+
+      startFinalRewrite() {
+        const session = requireSession();
+        if (session.stage !== "coaching") {
+          return failStage("最终复述只能从 coaching stage 开始。");
+        }
+        if (session.coachingRounds.some((round) => round.status === "pending")) {
+          return failStage("完成所有追问轮次后才能进入最终复述。");
+        }
+        assertTransition(session.stage, "finalRewrite");
+        const finalRewriteText = session.finalRewriteText ?? session.rewriteText;
+        set({
+          session: {
+            ...session,
+            stage: "finalRewrite",
+            finalRewriteText,
+            rewriteText: finalRewriteText,
+            updatedAt: updatedAt(),
+          },
+          error: null,
+          saveStatus: "idle",
+          requestRevision: get().requestRevision + 1,
+        });
+      },
+
+      updateFinalRewrite(text) {
+        const session = requireSession();
+        if (session.stage !== "finalRewrite") {
+          return failStage("最终复述只能在 finalRewrite stage 修改。");
+        }
+        invalidateOperation("comparison");
+        set({
+          session: {
+            ...session,
+            finalRewriteText: text,
+            rewriteText: text,
+            updatedAt: updatedAt(),
+          },
+          error: null,
+          saveStatus: "idle",
+          requestRevision: get().requestRevision + 1,
+        });
+      },
+
       updateRewrite(text) {
         const session = requireSession();
         if (session.stage !== "diagnosis") {
@@ -353,8 +543,8 @@ export function createTrainingStore(
 
       setComparison(comparison) {
         const session = requireSession();
-        if (session.stage !== "diagnosis") {
-          return failStage("对比结果只能从 diagnosis stage 设置。");
+        if (session.stage !== "finalRewrite") {
+          return failStage("对比结果只能从 finalRewrite stage 设置。");
         }
         assertTransition(session.stage, "result");
         set({
@@ -569,9 +759,9 @@ export function createTrainingStore(
 
       async requestComparison() {
         const session = requireSession();
-        if (session.stage !== "diagnosis") {
+        if (session.stage !== "finalRewrite") {
           return failStage(
-            "只能在 diagnosis stage 请求改写对比。",
+            "只能在 finalRewrite stage 请求改写对比。",
           );
         }
         const request = beginRequest(
@@ -585,7 +775,7 @@ export function createTrainingStore(
               provider: providerForSession(session, settingsLoader()),
               topic: session.topic,
               draftText: session.draftText,
-              rewriteText: session.rewriteText,
+              rewriteText: session.finalRewriteText,
               diagnosis: session.diagnosis,
             },
             request.controller.signal,
@@ -595,7 +785,7 @@ export function createTrainingStore(
               "comparison",
               request.id,
               session.id,
-              "diagnosis",
+              "finalRewrite",
               request.revision,
               request.fingerprint,
             )
@@ -723,10 +913,25 @@ function requestFingerprint(
       draftText: session.draftText,
     });
   }
+  if (operation === "coaching") {
+    return stableRequestValue({
+      topic: "topic" in session ? session.topic : null,
+      draftText: session.draftText,
+      diagnosis: "diagnosis" in session ? session.diagnosis : null,
+      currentRoundIndex:
+        "currentRoundIndex" in session ? session.currentRoundIndex : null,
+      currentAnswer: "currentAnswer" in session ? session.currentAnswer : null,
+      coachingRounds:
+        "coachingRounds" in session ? session.coachingRounds : null,
+    });
+  }
   return stableRequestValue({
     topic: "topic" in session ? session.topic : null,
     draftText: session.draftText,
-    rewriteText: session.rewriteText,
+    rewriteText:
+      "finalRewriteText" in session && session.finalRewriteText !== undefined
+        ? session.finalRewriteText
+        : session.rewriteText,
     diagnosis: "diagnosis" in session ? session.diagnosis : null,
   });
 }
