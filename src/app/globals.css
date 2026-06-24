@@ -1748,24 +1748,27 @@ textarea {
 /* Training workspace visual parity with the approved high-fidelity design. */
 .training-workspace {
   width: 100%;
-  gap: 28px;
+  gap: 24px;
+  font-family:
+    "Avenir Next", "PingFang SC", "Microsoft YaHei", Inter, ui-sans-serif,
+    system-ui, sans-serif;
 }
 
 .training-topbar {
   display: grid;
-  grid-template-columns: minmax(280px, 0.72fr) minmax(420px, 1.28fr);
+  grid-template-columns: minmax(240px, 0.78fr) minmax(360px, 1.22fr);
   align-items: start;
-  gap: 48px;
+  gap: 32px;
 }
 
 .training-topbar h1,
 .training-topbar__title {
   margin: 0;
   color: #20211f;
-  font-size: clamp(42px, 4vw, 58px);
+  font-size: 40px;
   font-weight: 900;
-  letter-spacing: -0.05em;
-  line-height: 1.08;
+  letter-spacing: 0;
+  line-height: 1.12;
 }
 
 .training-topbar h1:focus {
@@ -1773,10 +1776,12 @@ textarea {
 }
 
 .training-topbar > div > p:not(.training-topbar__title) {
-  margin: 20px 0 0;
+  margin: 14px 0 0;
   color: #858790;
-  font-size: clamp(18px, 1.65vw, 25px);
+  font-size: 20px;
+  font-weight: 750;
   letter-spacing: 0.02em;
+  line-height: 1.35;
 }
 
 .training-search {
@@ -1785,15 +1790,16 @@ textarea {
 
 .training-search input {
   width: 100%;
-  height: 76px;
-  padding: 0 34px;
+  height: 64px;
+  padding: 0 28px;
   border: 1px solid rgb(32 33 31 / 12%);
-  border-radius: 26px;
+  border-radius: 22px;
   outline: 0;
   color: #20211f;
   background: rgb(255 255 255 / 82%);
   box-shadow: none;
-  font-size: clamp(17px, 1.55vw, 22px);
+  font-size: 18px;
+  font-weight: 650;
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease;
@@ -1812,11 +1818,11 @@ textarea {
 .training-workspace .stage-tabs {
   width: 100%;
   max-width: none;
-  padding: 10px;
+  padding: 8px;
   display: block;
   overflow-x: auto;
   border: 1px solid rgb(32 33 31 / 5%);
-  border-radius: 28px;
+  border-radius: 24px;
   background: #f1f2f3;
   box-shadow: var(--shadow-low);
   scrollbar-width: thin;
@@ -1824,25 +1830,25 @@ textarea {
 
 .training-workspace .stage-tabs ol {
   width: 100%;
-  min-width: 880px;
+  min-width: 760px;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .training-workspace .stage-tabs li > :where(button, span) {
   width: 100%;
   min-width: 0;
-  min-height: 68px;
-  padding: 12px 16px;
+  min-height: 56px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border-radius: 22px;
+  border-radius: 18px;
   color: #777970;
   background: #ebeae4;
-  font-size: clamp(14px, 1.18vw, 18px);
+  font-size: 16px;
   font-weight: 850;
   white-space: nowrap;
 }
@@ -1882,15 +1888,15 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
-  gap: 34px;
+  gap: 28px;
 }
 
 .setup-card {
   min-width: 0;
-  min-height: 690px;
-  padding: clamp(34px, 3.5vw, 50px);
+  min-height: 520px;
+  padding: 32px;
   border: 1px solid rgb(32 33 31 / 7%);
-  border-radius: 42px;
+  border-radius: 30px;
   box-shadow:
     0 10px 26px rgb(30 31 40 / 5%),
     inset 0 1px 0 rgb(255 255 255 / 65%);
@@ -1910,38 +1916,38 @@ textarea {
 .setup-card h2 {
   margin: 0;
   color: #20211f;
-  font-size: clamp(32px, 3vw, 44px);
+  font-size: 32px;
   font-weight: 900;
-  letter-spacing: -0.045em;
+  letter-spacing: 0;
   line-height: 1.22;
 }
 
 .setup-card .choice-section {
-  margin-top: 40px;
+  margin-top: 30px;
 }
 
 .setup-card .choice-section legend {
-  margin-bottom: 22px;
+  margin-bottom: 16px;
   color: #20211f;
-  font-size: clamp(24px, 2.35vw, 34px);
+  font-size: 22px;
   font-weight: 900;
 }
 
 .setup-card .scenario-grid {
-  gap: 28px;
+  gap: 20px;
 }
 
 .setup-card .choice-card {
   position: relative;
-  min-height: 270px;
-  padding: 36px 30px;
+  min-height: 210px;
+  padding: 28px 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 22px;
+  gap: 14px;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 48px;
+  border-radius: 34px;
   background: #efeee9;
   cursor: pointer;
   transition:
@@ -1963,18 +1969,18 @@ textarea {
 
 .setup-card .choice-card strong {
   color: #20211f;
-  font-size: clamp(24px, 2vw, 31px);
+  font-size: 24px;
   line-height: 1.35;
 }
 
 .setup-card .choice-card span {
   color: #777970;
-  font-size: clamp(17px, 1.4vw, 22px);
+  font-size: 16px;
   line-height: 1.55;
 }
 
 .setup-card .difficulty-section {
-  margin-top: 48px;
+  margin-top: 34px;
 }
 
 .setup-card .training-segments {
@@ -1987,14 +1993,14 @@ textarea {
 }
 
 .setup-card .training-segments button {
-  min-width: 104px;
-  min-height: 76px;
-  padding: 0 26px;
+  min-width: 88px;
+  min-height: 58px;
+  padding: 0 22px;
   flex: 0 1 auto;
-  border-radius: 24px;
+  border-radius: 18px;
   color: #686a63;
   background: #efeee9;
-  font-size: clamp(20px, 1.9vw, 28px);
+  font-size: 18px;
   font-weight: 850;
 }
 
@@ -2007,10 +2013,10 @@ textarea {
 .recommendation-goal {
   position: relative;
   width: fit-content;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #5f60cf;
   cursor: pointer;
-  font-size: clamp(16px, 1.5vw, 22px);
+  font-size: 18px;
   font-weight: 900;
 }
 
@@ -2023,19 +2029,19 @@ textarea {
 }
 
 .recommendation-copy {
-  margin: 46px 0 0;
+  margin: 30px 0 0;
   color: #93948e;
-  font-size: clamp(19px, 1.7vw, 25px);
+  font-size: 17px;
   line-height: 1.62;
 }
 
 .recommendation-list {
-  margin: 34px 0 0;
+  margin: 24px 0 0;
   padding: 0;
   display: grid;
-  gap: 22px;
+  gap: 16px;
   color: #666861;
-  font-size: clamp(18px, 1.55vw, 23px);
+  font-size: 16px;
   line-height: 1.45;
   list-style: none;
 }
@@ -2043,38 +2049,38 @@ textarea {
 .recommendation-list li {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 }
 
 .recommendation-list li::before {
   content: "✓";
-  width: 42px;
-  height: 42px;
+  width: 30px;
+  height: 30px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
   color: #666861;
   background: #cad8b9;
-  font-size: 24px;
+  font-size: 17px;
   font-weight: 900;
 }
 
 .recommendation-actions {
   margin-top: auto;
-  padding-top: 36px;
+  padding-top: 28px;
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
 .recommendation-actions .ui-button {
-  min-height: 86px;
-  padding: 0 38px;
-  border-radius: 28px;
+  min-height: 64px;
+  padding: 0 30px;
+  border-radius: 22px;
   background: linear-gradient(135deg, #7f71ff, #6659ef);
   box-shadow: 0 12px 24px rgb(103 89 239 / 18%);
-  font-size: clamp(22px, 2vw, 30px);
+  font-size: 20px;
 }
 
 .recommendation-actions .source-badge {
@@ -2104,18 +2110,19 @@ textarea {
 
 @media (max-width: 759px) {
   .training-workspace {
-    gap: 26px;
+    gap: 22px;
   }
 
   .training-topbar h1,
   .training-topbar__title {
-    font-size: 40px;
+    font-size: 34px;
+    line-height: 1.15;
   }
 
   .training-search input {
-    height: 60px;
-    padding: 0 22px;
-    border-radius: 20px;
+    height: 56px;
+    padding: 0 20px;
+    border-radius: 18px;
     font-size: 16px;
   }
 
@@ -2125,19 +2132,19 @@ textarea {
   }
 
   .training-workspace .stage-tabs ol {
-    min-width: 720px;
+    min-width: 640px;
     gap: 7px;
   }
 
   .training-workspace .stage-tabs li > :where(button, span) {
-    min-height: 54px;
-    border-radius: 17px;
+    min-height: 50px;
+    border-radius: 16px;
     font-size: 13px;
   }
 
   .setup-card {
-    padding: 30px 24px;
-    border-radius: 30px;
+    padding: 24px 20px;
+    border-radius: 24px;
   }
 
   .setup-card .scenario-grid {
@@ -2146,9 +2153,9 @@ textarea {
   }
 
   .setup-card .choice-card {
-    min-height: 190px;
-    padding: 30px;
-    border-radius: 34px;
+    min-height: 150px;
+    padding: 24px;
+    border-radius: 26px;
   }
 
   .setup-card .training-segments {
@@ -2159,17 +2166,17 @@ textarea {
 
   .setup-card .training-segments button {
     min-width: 0;
-    min-height: 58px;
+    min-height: 52px;
     padding: 0 10px;
-    border-radius: 18px;
-    font-size: 17px;
+    border-radius: 16px;
+    font-size: 16px;
   }
 
   .recommendation-actions .ui-button {
     width: 100%;
-    min-height: 66px;
-    border-radius: 22px;
-    font-size: 21px;
+    min-height: 58px;
+    border-radius: 18px;
+    font-size: 18px;
   }
 }
 
@@ -2400,5 +2407,460 @@ textarea {
 
   .training-stage--topic .topic-block p {
     font-size: 14px;
+  }
+}
+
+/* Unified compact scale for all five training stages. */
+.training-workspace {
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.training-workspace > * {
+  min-width: 0;
+}
+
+.training-topbar {
+  grid-template-columns: minmax(220px, 0.78fr) minmax(320px, 1.22fr);
+  gap: 28px;
+}
+
+.training-topbar h1,
+.training-topbar__title {
+  font-size: 36px;
+  line-height: 1.14;
+}
+
+.training-topbar > div > p:not(.training-topbar__title) {
+  margin-top: 10px;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.training-search input {
+  height: 56px;
+  padding: 0 22px;
+  border-radius: 18px;
+  font-size: 16px;
+}
+
+.training-workspace .stage-tabs {
+  min-width: 0;
+  padding: 7px;
+  border-radius: 20px;
+}
+
+.training-workspace .stage-tabs ol {
+  min-width: 700px;
+  gap: 8px;
+}
+
+.training-workspace .stage-tabs li > :where(button, span) {
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 15px;
+  font-size: 14px;
+}
+
+.training-stage {
+  min-width: 0;
+  gap: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.training-stage > * {
+  min-width: 0;
+}
+
+.training-stage .training-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.training-heading h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+.training-heading > p:last-child {
+  max-width: 620px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.training-stage .eyebrow {
+  margin-bottom: 2px;
+  font-size: 10px;
+}
+
+.training-stage .ui-card {
+  padding: 18px;
+  border-radius: 18px;
+}
+
+.training-stage .ui-card h2,
+.training-stage .ui-card h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.training-stage .ui-card p,
+.training-stage .ui-card li {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.training-stage .ui-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.training-actions {
+  min-width: 0;
+  gap: 8px;
+}
+
+.topic-summary {
+  gap: 6px;
+}
+
+.topic-summary strong,
+.editor-field > span {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.editor-field textarea {
+  display: block;
+  min-height: 220px;
+  padding: 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.72;
+}
+
+.editor-meta {
+  margin-top: -10px;
+  font-size: 11px;
+}
+
+.feedback-stack,
+.diagnosis-grid > div:last-child {
+  gap: 12px;
+}
+
+.diagnosis-grid,
+.training-detail-grid {
+  gap: 14px;
+}
+
+.score-list {
+  margin: 12px 0;
+  gap: 7px;
+}
+
+.score-list > div {
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.score-list small {
+  display: block;
+  margin-top: 3px;
+  color: #73746e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.metric-grid {
+  gap: 12px;
+}
+
+.metric-grid .ui-card {
+  min-height: 116px;
+}
+
+.metric-grid span,
+.metric-grid small {
+  font-size: 11px;
+}
+
+.metric-grid strong {
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.hint-panel {
+  border-radius: 20px;
+}
+
+.hint-header {
+  padding: 14px 18px;
+  gap: 10px;
+}
+
+.hint-header-icon {
+  font-size: 17px;
+}
+
+.hint-header-text strong {
+  font-size: 14px;
+}
+
+.hint-header-text span {
+  font-size: 11px;
+}
+
+.hint-toggle {
+  width: 24px;
+  height: 24px;
+}
+
+.hint-body {
+  padding: 0 18px 18px;
+  gap: 12px;
+}
+
+.hint-section {
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.hint-section-header {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hint-section-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.hint-section-content {
+  font-size: 12px;
+  line-height: 1.62;
+}
+
+.setup-grid {
+  gap: 22px;
+}
+
+.setup-card {
+  min-height: 460px;
+  padding: 26px;
+  border-radius: 24px;
+}
+
+.setup-card h2 {
+  font-size: 26px;
+}
+
+.setup-card .choice-section {
+  margin-top: 24px;
+}
+
+.setup-card .choice-section legend {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.setup-card .scenario-grid {
+  gap: 14px;
+}
+
+.setup-card .choice-card {
+  min-height: 160px;
+  padding: 22px 18px;
+  gap: 10px;
+  border-radius: 26px;
+}
+
+.setup-card .choice-card strong {
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.setup-card .choice-card span {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.setup-card .difficulty-section {
+  margin-top: 26px;
+}
+
+.setup-card .training-segments {
+  gap: 8px;
+}
+
+.setup-card .training-segments button {
+  min-width: 74px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+.recommendation-goal {
+  font-size: 15px;
+}
+
+.recommendation-copy {
+  margin-top: 22px;
+  font-size: 14px;
+  line-height: 1.58;
+}
+
+.recommendation-list {
+  margin-top: 18px;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.recommendation-list li::before {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+
+.recommendation-actions {
+  padding-top: 22px;
+}
+
+.recommendation-actions .ui-button {
+  min-height: 56px;
+  padding: 0 24px;
+  border-radius: 18px;
+  font-size: 17px;
+}
+
+.training-workspace .stage-tabs--topic {
+  margin-bottom: 10px;
+  padding: 7px;
+  border-radius: 20px;
+}
+
+.training-workspace .stage-tabs--topic ol {
+  min-width: 700px;
+  gap: 8px;
+}
+
+.training-workspace .stage-tabs--topic li > :where(button, span) {
+  min-height: 56px;
+  padding: 9px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.training-stage--topic {
+  gap: 18px;
+}
+
+.training-stage--topic .topic-card {
+  padding: 22px;
+  border-radius: 22px;
+}
+
+.training-stage--topic .topic-tags {
+  margin-bottom: 14px;
+}
+
+.training-stage--topic .topic-card h2 {
+  margin-bottom: 14px;
+  font-size: 28px;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.training-stage--topic .topic-block {
+  padding: 12px 0;
+}
+
+.training-stage--topic .topic-block strong {
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.training-stage--topic .topic-block p {
+  font-size: 14px;
+  line-height: 1.68;
+}
+
+@media (max-width: 759px) {
+  .training-workspace {
+    gap: 18px;
+  }
+
+  .training-topbar {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .training-topbar h1,
+  .training-topbar__title {
+    font-size: 30px;
+  }
+
+  .training-topbar > div > p:not(.training-topbar__title) {
+    font-size: 15px;
+  }
+
+  .training-search input {
+    height: 50px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+
+  .training-workspace .stage-tabs ol,
+  .training-workspace .stage-tabs--topic ol {
+    min-width: 600px;
+  }
+
+  .training-workspace .stage-tabs li > :where(button, span),
+  .training-workspace .stage-tabs--topic li > :where(button, span) {
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  .training-heading h1 {
+    font-size: 24px;
+  }
+
+  .training-stage .ui-card {
+    padding: 16px;
+  }
+
+  .setup-card {
+    padding: 20px 18px;
+  }
+
+  .setup-card h2,
+  .training-stage--topic .topic-card h2 {
+    font-size: 24px;
+  }
+
+  .setup-card .choice-card {
+    min-height: 128px;
+    padding: 20px;
+  }
+
+  .editor-field textarea {
+    min-height: 200px;
+  }
+
+  .metric-grid .ui-card {
+    min-height: 100px;
   }
 }

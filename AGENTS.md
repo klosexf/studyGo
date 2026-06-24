@@ -1,221 +1,190 @@
-> version: 0.3.0 | updated_at: 2026-06-15 | owner: @chenxiaofeng
+> version: 0.4.0 | updated_at: 2026-06-15 | owner: @chenxiaofeng
 > reader: AI Coding Agent (Codex / Claude Code / Cursor / Qoder)
 > scope: `studyGo/` 项目
 
-## 1. 项目概述
-- 定位: 单人自用的网页端 AI 逻辑表达教练，通过命题、初稿、诊断、二次改写和复盘训练用户“想清楚、说明白”。
-- 核心闭环: 设置训练 → AI 生成命题 → 写初稿 → AI 诊断 → 二次改写 → 对比复盘 → 本地保存 → 更新趋势与下一练。
-- 产品原则: AI 不代写完整答案，不评价用户立场对错，只诊断推理质量和表达清晰度。
-- 技术栈: Next.js 16 App Router / React 19 / TypeScript / Tailwind CSS 4 / Zustand / Dexie / IndexedDB / Zod / Recharts
-- AI 接入: OpenAI / DeepSeek / 智谱 / Mock Provider，通过统一 Provider Adapter 调用。
-- 仓库类型: 单工程 Next.js 应用，不是 monorepo。
-- 运行环境: Node.js 20+（推荐 22 LTS）/ pnpm 10 / Chromium / macOS
-- 数据边界: 无登录、无云数据库、无云同步；训练数据和 Provider 设置只保存在当前浏览器。
+# 理序 Agent Map
 
-## 2. 任务分级（执行前先自评）
-| 级别 | 定义 | 处理方式 |
-| --- | --- | --- |
-| L0 只读 | 查代码、文档、测试、日志，不改文件 | 自动执行 |
-| L1 单文件 | 单个组件、纯函数、样式或对应测试内的局部改动；不改公共契约 | 自动执行 + 跑相关测试 |
-| L2 跨文件 | 涉及页面、Store、存储、Route Handler、Provider、共享 Schema 或完整交互协作 | 列影响路径 + 跑完整验证 |
-| L3 高风险 | 改依赖、数据迁移、凭据、安全策略、AI 契约、Prompt 核心约束或删除文件 | 必须人工确认 |
+本文件只提供项目地图和违反后会直接造成问题的规则。模块细节以链接的源码、测试和规格为准。
 
-升级条件：触发以下任一项直接按 L3 处理
-- 修改 `package.json`、`pnpm-lock.yaml` 或升级核心依赖。
-- 修改 Dexie 数据库版本、表结构、迁移、清空或隔离策略。
-- 修改 localStorage 设置结构、结果 marker、版本或迁移行为。
-- 修改 API Key 的保存、传输、脱敏或日志行为。
-- 放宽 Provider Base URL、DNS、SSRF 或网络地址安全校验。
-- 修改 `AIProvider` 公共接口、AI 请求/响应 Schema、评分协议或 Prompt 核心约束。
-- 修改“真实 Provider 失败不自动回退 Mock”的行为。
-- 删除任何项目文件或训练数据。
+适配原则：只写当前源码、测试、`package.json` 或已确认规格能够证明的规则；外部最佳实践只有在本项目存在对应能力时才采用。
 
-L3 实施前必须说明目标、影响文件、数据或安全风险、兼容性、验证方式和回滚点；未获确认前只能做只读分析。
+## 1. 项目地图
 
-## 3. 快速命令
-| 用途 | 命令 |
+- 产品：单人本地使用的 AI 逻辑表达教练。
+- 闭环：设置 → 命题 → 初稿 → 诊断改写 → 结果复盘 → 本地保存 → 趋势与下一练。
+- 原则：AI 只诊断、追问和对比，不评价立场，不代写完整答案。
+- 技术：Next.js 16、React 19、TypeScript、Zustand、Dexie/IndexedDB、Zod、Recharts、Vitest、Playwright。
+- 边界：无登录、云同步、多用户、付费、社区、语音和原生 App。
+
+关键入口：
+
+| 领域 | 入口 |
 | --- | --- |
-| 安装依赖 | `pnpm install` |
-| 启动开发服务 | `pnpm dev` |
-| ESLint | `pnpm lint` |
-| TypeScript 检查 | `pnpm typecheck` |
-| 单元与组件测试 | `pnpm test` |
-| 单测过滤 | `pnpm test -- <文件或匹配模式>` |
-| 生产构建 | `pnpm build` |
-| E2E | `pnpm test:e2e` |
-| 查看改动 | `git status --short`（仅当前目录存在 Git 仓库时） |
+| 产品范围 | [`逻辑表达训练产品 · 单人自用版 MVP PRD.md`](./逻辑表达训练产品%20·%20单人自用版%20MVP%20PRD.md) |
+| 技术架构 | [`逻辑表达训练产品_开发技术方案.md`](./逻辑表达训练产品_开发技术方案.md) |
+| 已确认规格 | [`docs/superpowers/specs/`](./docs/superpowers/specs/) |
+| 页面与 API | [`src/app/`](./src/app/) |
+| 训练流程 | [`src/features/training/`](./src/features/training/) |
+| Provider 与 Prompt | [`src/lib/ai/`](./src/lib/ai/) |
+| 本地存储 | [`src/lib/storage/`](./src/lib/storage/) |
+| 测试 | [`tests/`](./tests/) |
 
-- UI 验证优先使用 Agent Browser / Playwright / 浏览器实际操作。
-- Playwright 基址为 `http://127.0.0.1:3000`，当前 web server 命令为 `npm run dev`。
-- 缺少 Playwright Chromium 时运行 `pnpm exec playwright install chromium`。
-- 企业证书环境可用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指定已有 Chromium。
-- 根目录 `test-*.js` 只检查历史 HTML/设计文档，不属于默认测试链；仅修改对应文档时按需运行 `node <file>`。
-- 不要伪造 `make`、`yarn`、独立后端服务等本项目不存在的命令。
+事实优先级：
 
-## 4. 仓库结构
+> 自动化检查 > 当前源码与测试 > 已确认规格 > PRD > 技术方案 > 口头约定
+
+文档与实现冲突时，以源码和测试为准，并明确指出差异。
+
+## 2. 架构硬规则
+
+1. UI 调用链必须保持 `React UI → training-api → Route Handler → Provider Adapter`。
+   - WHY：绕过任一层会丢失统一校验、错误清洗或供应商隔离。
+   - HOW：页面调用 [`training-api.ts`](./src/features/training/services/training-api.ts)，外部 AI 调用仅放在 [`src/lib/ai/providers/`](./src/lib/ai/providers/)。
+
+2. 请求、AI 输出和持久化数据必须经过 Zod 校验。
+   - WHY：TypeScript 类型不能验证运行时网络或浏览器数据。
+   - HOW：复用 [`schemas/`](./src/features/training/schemas/) 和 [`training-repository.ts`](./src/lib/storage/training-repository.ts)，禁止用类型断言绕过。
+
+3. Prompt 只能放在 [`src/lib/ai/prompts/`](./src/lib/ai/prompts/)。
+   - WHY：散落 Prompt 会导致版本、注入防护和输出契约失控。
+   - HOW：组件和 Route Handler 只传结构化输入。
+
+4. 趋势、聚合分、短板和推荐必须由确定性函数计算。
+   - WHY：历史统计必须可复现，不能随模型漂移。
+   - HOW：修改 [`src/lib/analytics/`](./src/lib/analytics/) 并补单元测试。
+
+## 3. 训练与异步硬规则
+
+- 状态机固定为 `setup → topic → draft → diagnosis → result`；合法回退见 [`state-machine.ts`](./src/features/training/state-machine.ts)。
+- AI 请求前必须保存会话；失败时停留当前步骤并保留用户文本。
+- 重复请求必须取消旧请求；文本、步骤或会话变化后，旧响应不得写回。
+- 一次训练固定 Provider ID 和模型；真实 Provider 失败不得静默切换 Mock。
+- 初稿和改写按 grapheme cluster 计数，必须为 200–400 个字符。
+- 结果未保存时不得离开结果页；保存失败只能重试保存，不能重复调用 AI。
+- 刷新结果页必须通过已有记录恢复，不能重复写记录。
+
+实现与测试入口：
+[`training-store.ts`](./src/features/training/store/training-store.ts)、
+[`use-session-persistence.ts`](./src/features/training/hooks/use-session-persistence.ts)、
+[`training-workspace.tsx`](./src/features/training/components/training-workspace.tsx)、
+[`training-store.test.ts`](./tests/unit/training-store.test.ts)。
+
+## 4. 数据与安全硬规则
+
+- API Key 只允许存在于版本化 Provider 设置和发往本地 Route Handler 的 JSON 请求体。
+- 禁止把 Key 写入源码、IndexedDB、训练记录、URL、日志、错误、截图或测试快照。
+- 禁止宣称 localStorage 中的 Key 已加密或适合不可信设备。
+- 训练全文只存 IndexedDB，不存 localStorage。
+- Provider 设置清除与训练数据清空必须保持为两个独立确认操作。
+- 禁止放宽 HTTPS、私网/元数据地址、请求前 DNS 重解析和禁止重定向策略。
+- 禁止用删库或清浏览器数据掩盖迁移、恢复或并发问题。
+
+存储事实与迁移以
+[`database.ts`](./src/lib/storage/database.ts)、
+[`training-repository.ts`](./src/lib/storage/training-repository.ts) 和
+[`provider-settings-store.ts`](./src/features/settings/provider-settings-store.ts)
+为准。
+
+## 5. AI 产品硬规则
+
+- 禁止完整范文、整段代写或替用户完成改写。
+- 禁止因用户立场不同而扣分。
+- 诊断必须引用或概括用户文本证据，只突出关键问题。
+- 八个评分维度必须完整且唯一；分数为 1–5，最多一位小数。
+- 聚合分、提升值、覆盖数和最低维度必须由服务端重算。
+- AI 或用户内容必须作为普通文本渲染，禁止 `dangerouslySetInnerHTML`。
+- 真实 Provider 只允许一次 JSON 修复重试，默认超时 60 秒。
+
+具体协议以 [`schemas/`](./src/features/training/schemas/)、[`prompts/`](./src/lib/ai/prompts/) 和 [`provider-adapters.test.ts`](./tests/unit/provider-adapters.test.ts) 为准。
+
+## 6. UI 硬规则
+
+- 复用现有 AppShell、Modal、Drawer 和 Overlay Manager，不另建弹层基础设施。
+- Overlay 必须保留 portal、顶层 Escape、焦点圈定、背景隔离和引用计数滚动锁。
+- 训练阶段是语义进度列表，不是 ARIA tabs；Provider 切换才使用 tabs。
+- 图表必须有文字/数值摘要，不能只靠颜色表达。
+- UI 改动必须用浏览器实际验证；纯 curl 不能证明页面渲染正确。
+
+入口：
+[`app-shell/`](./src/components/app-shell/)、
+[`ui/`](./src/components/ui/)、
+[`globals.css`](./src/app/globals.css)、
+[`app-shell.test.tsx`](./tests/unit/app-shell.test.tsx)。
+
+## 7. 风险分级
+
+| 级别 | 范围 | 要求 |
+| --- | --- | --- |
+| L0 | 只读分析 | 自动执行 |
+| L1 | 单组件、纯函数、样式或对应测试 | 自动执行 + 局部验证 |
+| L2 | 页面、Store、存储、Route、Provider、共享 Schema | 先列影响路径 + 完整验证 |
+| L3 | 依赖、数据迁移、凭据、安全、AI 契约、删除文件 | 实施前人工确认 |
+
+以下直接升级 L3：修改 `package.json`/`pnpm-lock.yaml`、Dexie Schema、localStorage 格式、API Key 行为、Provider URL 安全、公共 AI Schema/Prompt 契约或删除文件。
+
+## 8. 执行与验证
+
+执行顺序：
+
+1. 读取相关源码、测试和 [`docs/superpowers/`](./docs/superpowers/)。
+2. 说明目标、非目标、级别和影响路径。
+3. 功能或 bug 先补失败测试，再实施最小改动。
+4. 运行局部测试，再运行影响范围要求的完整验证。
+5. UI 改动必须启动应用并实际操作桌面及受影响移动视口。
+6. 输出命令、结果、风险、回滚点和未验证项。
+
+真实命令：
+
 ```text
-.
-├── src/
-│   ├── app/                         # App Router 页面与 Route Handlers
-│   │   ├── api/ai/                  # topic / diagnosis / comparison
-│   │   ├── api/providers/test/      # Provider 连接测试
-│   │   └── training/                # 五步训练页面
-│   ├── components/
-│   │   ├── app-shell/               # 三栏应用外壳
-│   │   ├── feedback/                # 加载与错误反馈
-│   │   └── ui/                      # Button、Card、Modal、Drawer、Overlay
-│   ├── features/
-│   │   ├── dashboard/               # 仪表盘与数据选择器
-│   │   ├── history/                 # 历史筛选与复盘
-│   │   ├── settings/                # Provider 配置与 localStorage
-│   │   └── training/                # 状态机、Store、Schema、服务与五步组件
-│   └── lib/
-│       ├── ai/                      # Provider、Prompt、Factory 与 URL 安全
-│       ├── analytics/               # 趋势、短板与推荐纯函数
-│       ├── errors/                  # 统一应用错误
-│       └── storage/                 # Dexie 数据库与 Repository
-├── tests/
-│   ├── unit/                        # Vitest / React Testing Library
-│   ├── e2e/                         # Playwright 完整训练闭环
-│   └── fixtures/                    # 稳定测试数据
-├── docs/superpowers/specs/          # 已确认设计规格
-├── docs/superpowers/plans/          # 实施计划
-├── package.json                     # 依赖与真实脚本入口
-├── pnpm-lock.yaml                   # 依赖锁文件
-├── playwright.config.ts             # E2E 配置
-└── vitest.config.ts                 # 单元与组件测试配置
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:e2e
 ```
 
-## 5. 关键约定
-1. UI 不直接调用外部 AI 服务；遵循 `React UI -> training-api -> Route Handler -> Provider Adapter`。
-2. Route Handler 负责请求校验、Provider 调用、响应校验和统一错误，不保存训练历史。
-3. 业务层只依赖统一 `AIProvider`；供应商差异放在 `src/lib/ai/providers/`。
-4. Prompt 只放在 `src/lib/ai/prompts/`，不得在页面组件或 Route Handler 临时拼接。
-5. 所有请求、AI 输出和持久化数据必须经过 Zod 校验，禁止用类型断言绕过运行时校验。
-6. Zustand vanilla store 管理当前会话、AI 请求和保存状态；长期数据走 Dexie/IndexedDB。
-7. IndexedDB 保存 `sessions`、`records` 和 `quarantine`，禁止保存 API Key。
-8. localStorage 保存版本化 Provider 设置和结果恢复 marker，禁止保存训练全文。
-9. 趋势、聚合分、短板和下一练使用确定性 TypeScript 纯函数计算，不调用 AI 二次总结。
-10. 训练状态机固定为 `setup → topic → draft → diagnosis → result`；只允许 `topic → setup`、`draft → topic` 和 `result → setup` 回退。
-11. AI 失败时停留当前步骤并保留文本；AI 请求前强制保存当前会话。
-12. 输入停止约 500ms 后自动保存；页面隐藏、pagehide 和卸载时执行尽力保存。
-13. 重复 AI 操作取消旧请求并忽略过期响应；修改文本、步骤或会话后，旧响应不得写回。
-14. 一次训练固定 Provider ID 和模型；Base URL 与 API Key 按会话 Provider 在每次请求时读取当前设置。
-15. 初稿和二次改写按 grapheme cluster 计数，必须为 200–400 个字符。
-16. 真实 Provider 超时为 60 秒；格式校验失败只允许一次 JSON 修复请求。
-17. 诊断必须覆盖八个唯一维度；分数为 1–5，最多一位小数。
-18. 逻辑分、表达分、覆盖数、提升值和最低维度由服务端根据维度分重新计算。
-19. 真实 Provider 失败不得静默回退 Mock；Mock 结果必须明确标识并保持可重复。
-20. 需求、方案和计划优先延续 `docs/superpowers/specs/` 与 `docs/superpowers/plans/` 的现有习惯。
+- 跨模块改动至少执行前四项。
+- 完整闭环、导航、恢复或关键 UI 改动追加 E2E。
+- 缺少 pnpm、Chromium 或服务时明确记录阻塞，不得写成已通过。
+- `test-*.js` 只检查历史 HTML/设计文档，不能替代应用测试。
 
-### 当前持久化事实
-- Dexie 数据库名为 `logic-expression-training`，当前版本为 v2。
-- `completeSession` 必须在事务内写入 `records` 并删除同 ID `sessions`。
-- 损坏且未被并发替换的数据移入 `quarantine`，不得静默污染正常记录。
-- Provider 设置主键为 `logic-trainer.settings.v1`，结构为 `{ version: 1, settings }`。
-- 旧设置键会迁移到 v1 envelope，并删除旧凭据副本。
-- 结果 marker 为 `logic-trainer.current-result`，用于刷新恢复结果页和防止重复写记录。
-- 清空训练数据会清空 `sessions`、`records`、`quarantine`，但不清 Provider 设置。
-- 清除 Provider 设置不会删除训练记录。
+API 验证规范：
 
-## 6. 硬性禁止项
-- 禁止把 API Key 写入源码、IndexedDB、训练记录、URL、日志、错误信息、截图、测试快照或提交内容。
-- 禁止宣称 localStorage 中的 API Key 已加密或完全安全。
-- 禁止在组件中绕过 Route Handler 直接调用 OpenAI、DeepSeek 或智谱。
-- 禁止在真实 Provider 失败后自动切换为 Mock。
-- 禁止使用 `dangerouslySetInnerHTML` 渲染 AI 或用户内容。
-- 禁止在组件中拼接 Prompt 或自行解析供应商专用响应。
-- 禁止放宽 `provider-url.ts` 的 HTTPS、私网、云元数据、DNS 重解析或禁止重定向约束。
-- 禁止让旧 AI 响应、旧恢复结果或旧保存任务覆盖新会话。
-- 禁止绕过状态机直接进入 diagnosis 或 result。
-- 禁止输出完整范文、整段代写或替用户完成二次改写。
-- 禁止因用户立场不同而扣分。
-- 禁止把训练全文写入 localStorage。
-- 禁止把 Provider 设置清除与训练数据清空合并为一个操作。
-- 禁止在业务组件重复实现 Modal/Drawer 的焦点圈定、背景隔离和滚动锁。
-- 禁止删除 `docs/superpowers/specs/`、`docs/superpowers/plans/` 历史文档。
-- 禁止把 `.next/`、`node_modules/`、Playwright 报告、截图或临时 HTML 当成业务源码。
+- 仅用于现有 `/api/ai/*` 和 `/api/providers/test` Route Handler；本项目没有独立后端服务。
+- 每条 `curl` 独立执行，禁止用 `&&` 串联多个请求。
+- 响应写入 `/tmp/<name>.json`，再用独立 `python3` 命令解析。
+- 本项目无登录/token 流程；Provider 配置按请求 Schema 传入，示例优先使用 Mock，禁止在命令历史中写真实 Key。
+- 排查顺序：Route Handler → Provider Adapter → 终端开发日志 → 浏览器 Network/Console → IndexedDB/localStorage。
 
-## 7. 标准执行顺序（L1+）
-0. 跨会话续跑：先读取相关 `docs/superpowers/specs/`、`docs/superpowers/plans/`、当前代码、测试和已有改动。项目当前没有约定 `progress.md` 或 `bugs.md`，不得自行创建。
-1. 复述目标：说清楚要做什么、明确不做什么。
-2. 自评级别：说明 L1/L2/L3；L3 在实施前请求人工确认。
-3. 列影响路径：说明新增、修改、删除哪些文件；删除文件直接升级 L3。
-4. 给步骤：拆成可独立验证的几步。
-5. 先写测试：功能或 bug 修复先补能证明行为的失败测试。
-6. 实施：遵循现有模块边界，每步后运行对应局部测试。
-7. 总验证：按 §8 验证矩阵执行；跨模块改动至少运行 lint、typecheck、test 和 build。
-8. UI 验证：使用浏览器实际验证桌面与受影响移动视口。
-9. 输出风险：说明影响范围、可回滚点、已知失败和后续事项。
-10. 若发现代码、测试和规格不一致，先记录差异并以代码与测试为事实，不得静默覆盖现有行为。
+## 9. 错误输出规范
 
-## 8. 验证闭环
-- 核心自动化验证：`pnpm lint`、`pnpm typecheck`、`pnpm test`、`pnpm build`
-- 完整流程验证：`pnpm test:e2e`
-- 局部验证：`pnpm test -- <文件或匹配模式>`
-- UI 改动不能只靠单测；必须实际验证对应交互、桌面布局和受影响移动视口。
-- 若本机缺少 pnpm、Chromium 或开发服务，必须写明阻塞，不得默认“应该没问题”。
+新增 lint、校验或守卫的错误信息必须包含：
 
-### 改动-验证配对
-| 改动类型 | 最低验证 |
-| --- | --- |
-| 纯函数、Schema、Store | 相关 Vitest + `pnpm typecheck` |
-| React 组件和交互 | 相关 Testing Library + `pnpm typecheck` |
-| Route Handler 或 Provider | Route/Provider 合约测试 + `pnpm typecheck` |
-| IndexedDB/localStorage | Repository/设置测试 + 迁移、隔离或失败路径测试 |
-| Prompt、AI Schema、评分 | Schema + Mock + Provider Adapter + Route 合约测试 |
-| Overlay、导航保护、恢复 | App shell / workspace 测试 + 关键 E2E |
-| 样式和响应式 | 相关测试 + 浏览器桌面/移动实际验证 |
-| 跨模块功能 | lint + typecheck + test + build |
-| 完整训练闭环 | 上述验证 + E2E |
+```text
+✗ WHAT：哪个文件/请求违反了什么规则
+  WHY：该规则防止什么架构、数据或安全问题
+  HOW：应修改到哪一层，或使用哪个已有入口
+```
 
-### 状态-验证配对
-- 无命令 = 无证据；没有可执行验证结果，不得写成“已完成”或“已验证”。
-- 命令失败必须记录首个关键错误、失败数量和是否与本次改动相关。
-- 不得用单元测试代替 UI 手测，不得用构建成功代替行为验证。
-- E2E 失败时保留并说明 Playwright trace、截图或报告路径。
-- 用户明确反馈已测试或回测正常时，可以记录用户确认，但不得伪装成自动化验证通过。
-- 当前已知基线（2026-06-15）：TypeScript 检查通过；Vitest 318/320 通过，存在 2 个既有失败；ESLint 在 `proposition-hint-panel.tsx` 有 8 个既有未转义引号错误。后续执行时必须重新验证，不得永久假定该基线不变。
+只输出“违规”“失败”或错误码而没有 WHY + HOW，不算合格错误信息。
 
-### 关键行为闭环
-- 结果保存前先写 `logic-trainer.current-result` marker。
-- 结果未保存时阻止仪表盘、新训练、浏览器返回和页面卸载；历史与设置仍可打开。
-- 结果保存失败时保留结果页并提供重试，禁止重复生成 AI 结果。
-- 刷新结果页时从已完成记录恢复，不得重复写入记录。
-- Overlay 通过 `#overlay-root` portal、栈式 Escape、焦点圈定、背景 `inert`/`aria-hidden` 和引用计数滚动锁工作。
-- `1400px` 以下应用壳改为两列并把洞察栏移到主区下方；`760px` 以下改为单列。
+## 10. 完成定义
 
-## 9. 验收标准（DoD）
-- [ ] 目标与非目标已说明
-- [ ] 任务级别与影响路径已列出
-- [ ] 改动遵守 MVP 范围和现有模块边界
-- [ ] 未绕过状态机、Zod、Route Handler 或 Provider Adapter
-- [ ] 用户文本在错误、重试、刷新和恢复路径中不会丢失
-- [ ] 过期请求、恢复和保存结果不会覆盖更新后的会话
-- [ ] 未泄露 API Key、请求头、完整 Prompt 或 Provider 原始错误
-- [ ] 相关单元、组件、存储或合约测试已执行并说明结果
-- [ ] 跨模块改动已运行 lint、typecheck、test 和 build
-- [ ] 完整闭环或关键交互改动已运行 E2E
-- [ ] UI 改动已完成桌面和受影响移动视口手测，或已说明阻塞
-- [ ] 未引入与项目无关的命令、目录或技术栈描述
-- [ ] 未验证项、已知失败和真实阻塞已明确说明
-- [ ] 风险、回滚点和后续事项已输出
+- [ ] 目标、非目标、风险级别和影响路径已说明
+- [ ] 相关测试先失败后通过
+- [ ] 未绕过状态机、Zod、Route Handler、Provider Adapter 或存储边界
+- [ ] 用户文本、凭据和历史数据在失败路径中安全
+- [ ] lint、typecheck、test、build 按影响范围执行
+- [ ] UI/完整闭环已实际自测，不只编译通过
+- [ ] 所有失败与阻塞均包含 WHAT + WHY + HOW
+- [ ] 风险、回滚点和未验证项已输出
 
-## 10. 回滚协议
-| 改动类型 | 可回滚点 | 回滚方式 | 影响范围 |
-| --- | --- | --- | --- |
-| 普通 TypeScript / React / CSS | 上一提交或本次补丁 | 回滚对应提交或精确撤销本次改动 | 当前项目 |
-| `package.json` / `pnpm-lock.yaml` | 上一提交 | 两个文件一起回滚，重新安装并跑完整验证 | 依赖、构建与测试 |
-| IndexedDB Schema / 数据迁移 | 上一提交 + 浏览器数据检查 | 回退代码并执行兼容迁移，禁止直接删库掩盖问题 | 当前浏览器训练数据 |
-| localStorage 设置 / marker | 上一提交 + 旧键检查 | 回退代码并验证旧设置、结果恢复和迁移 | Provider 配置与结果恢复 |
-| Prompt / Provider / 评分协议 | 上一版本号 | 回退实现并保留历史记录中的版本可解释性 | AI 输出和历史记录 |
+## 11. 规则演进
 
-- 禁止使用 `git reset --hard`、`git checkout --` 或删除浏览器数据来覆盖用户改动，除非用户明确授权并已说明数据损失。
-- 回滚持久化代码时必须同时检查已经写入的 IndexedDB/localStorage 数据，不能只回退源码。
+采用 Bad Case 驱动：
 
-## 11. 文档与事实优先级
-- 当前代码、自动化测试和 `package.json` > `docs/superpowers/specs/` > MVP PRD > 开发技术方案 > `docs/superpowers/plans/` > 页面清单、设计文档和效果图 > 临时说明
-- 文档与源码冲突时，以当前源码和测试为准，并明确指出差异。
-- 根目录 `test-*.js` 与历史 HTML 只约束对应设计文档，不覆盖当前 React 应用事实。
-- 本文件仅约束 `studyGo/` 项目，不覆盖相邻目录或其他仓库。
-- `AGENTS.md` 只记录长期稳定规则，不记录临时任务状态。
+> Agent 犯错 → 判断是否可自动化检查 → 能自动化则加测试/lint/CI；不能自动化且全局适用才写本文件；模块细节写入对应规格或源码旁测试。
+
+当前项目没有既定 CI 配置；优先补 Vitest、Playwright、ESLint 或 `package.json` 脚本，只有用户要求引入 CI 时才新增流水线。
+
+`AGENTS.md` 必须保持在 200 行以内。新增规则前先删除重复说明，禁止把它扩展成操作手册。

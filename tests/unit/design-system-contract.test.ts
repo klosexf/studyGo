@@ -6,27 +6,44 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync(resolve("src/app/globals.css"), "utf8");
 
 function getRuleDeclarations(source: string, selector: string) {
+  return getRuleDeclarationMatches(source, selector).at(0) ?? new Map();
+}
+
+function getLastRuleDeclarations(source: string, selector: string) {
+  return getRuleDeclarationMatches(source, selector).at(-1) ?? new Map();
+}
+
+function hasRuleDeclaration(
+  source: string,
+  selector: string,
+  property: string,
+  value: string,
+) {
+  return getRuleDeclarationMatches(source, selector).some(
+    (declarations) => declarations.get(property) === value,
+  );
+}
+
+function getRuleDeclarationMatches(source: string, selector: string) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = source.match(
-    new RegExp(`(?:^|})\\s*${escapedSelector}\\s*\\{([^}]*)\\}`, "m"),
+  const matches = source.matchAll(
+    new RegExp(`(?:^|})\\s*${escapedSelector}\\s*\\{([^}]*)\\}`, "gm"),
   );
 
-  if (!match) {
-    return new Map<string, string>();
-  }
-
-  return new Map(
-    match[1]
-      .split(";")
-      .map((declaration) => declaration.trim())
-      .filter(Boolean)
-      .map((declaration) => {
-        const separator = declaration.indexOf(":");
-        return [
-          declaration.slice(0, separator).trim(),
-          declaration.slice(separator + 1).trim(),
-        ];
-      }),
+  return [...matches].map((match) =>
+    new Map(
+      match[1]
+        .split(";")
+        .map((declaration) => declaration.trim())
+        .filter(Boolean)
+        .map((declaration) => {
+          const separator = declaration.indexOf(":");
+          return [
+            declaration.slice(0, separator).trim(),
+            declaration.slice(separator + 1).trim(),
+          ];
+        }),
+    ),
   );
 }
 
@@ -100,5 +117,132 @@ describe("design system CSS contract", () => {
       .toBe("anywhere");
     expect(getRuleDeclarations(css, ".user-long-text").get("word-break"))
       .toBe("break-word");
+  });
+
+  it("keeps the training center panel on the compact visual scale", () => {
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-topbar h1,\n.training-topbar__title",
+        "font-size",
+        "36px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-search input", "height", "56px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-workspace .stage-tabs ol",
+        "min-width",
+        "700px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-workspace .stage-tabs li > :where(button, span)",
+        "min-height",
+        "48px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".setup-card", "min-height", "460px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".setup-card .choice-card",
+        "min-height",
+        "160px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".recommendation-actions .ui-button",
+        "min-height",
+        "56px",
+      ),
+    ).toBe(true);
+    expect(getLastRuleDeclarations(css, ".training-search input").get("height"))
+      .toBe("50px");
+  });
+
+  it("keeps all training stages on one compact shared scale", () => {
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-workspace",
+        "grid-template-columns",
+        "minmax(0, 1fr)",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-workspace > *", "min-width", "0"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-stage", "gap", "18px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-stage", "min-width", "0"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-topbar", "grid-template-columns", "1fr"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-heading h1", "font-size", "28px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-stage .ui-card", "padding", "18px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-stage .ui-card",
+        "border-radius",
+        "18px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".training-stage .ui-button", "min-height", "40px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".editor-field textarea", "min-height", "220px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".score-list > div", "padding", "8px 10px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".metric-grid .ui-card",
+        "min-height",
+        "116px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-workspace .stage-tabs--topic li > :where(button, span)",
+        "min-height",
+        "56px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(
+        css,
+        ".training-stage--topic .topic-card h2",
+        "font-size",
+        "28px",
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".hint-header", "padding", "14px 18px"),
+    ).toBe(true);
+    expect(
+      hasRuleDeclaration(css, ".hint-section", "padding", "12px 14px"),
+    ).toBe(true);
   });
 });
