@@ -207,9 +207,11 @@ async function reachDraft(page: Page) {
   await page.goto("/training");
   await expect(page.getByRole("heading", { name: "设置训练" })).toBeVisible();
   await page.getByRole("button", { name: "生成训练命题" }).click();
-  await expect(page.getByText("命题质量检查")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "开始写初稿" }),
+  ).toBeVisible();
   const topicTitle =
-    (await page.getByRole("heading", { level: 1 }).textContent())?.trim()
+    (await page.locator("#topic-title").textContent())?.trim()
     || "稳定还是成长";
   await page.getByRole("button", { name: "开始写初稿" }).click();
   await expect(page.getByRole("heading", { name: "写初稿" })).toBeVisible();
@@ -217,7 +219,7 @@ async function reachDraft(page: Page) {
 }
 
 async function reachResultWithoutWaitingForSave(page: Page) {
-  const topicTitle = await reachDiagnosis(page);
+  const topicTitle = await reachFinalRewrite(page);
   await page.getByRole("button", { name: "查看结果复盘" }).click();
   await expect(page.getByRole("heading", { name: "结果复盘" })).toBeVisible();
   return topicTitle;
@@ -230,8 +232,44 @@ async function reachDiagnosis(page: Page) {
   await expect(
     page.getByRole("heading", { name: "诊断与改写" }),
   ).toBeVisible();
-  await page.getByRole("textbox", { name: "二次改写" }).fill(REWRITE_TEXT);
   return topicTitle;
+}
+
+async function reachFinalRewrite(page: Page) {
+  const topicTitle = await reachDiagnosis(page);
+  await page.getByRole("button", { name: "开始教练追问" }).click();
+  await expect(page.getByRole("heading", { name: "教练追问" })).toBeVisible();
+  await answerCoachingRound(page);
+  await page.getByRole("button", { name: "进入最终复述" }).click();
+  await expect(page.getByRole("heading", { name: "最终复述" })).toBeVisible();
+  await page.getByRole("textbox", { name: "最终复述" }).fill(REWRITE_TEXT);
+  return topicTitle;
+}
+
+async function answerCoachingRound(page: Page) {
+  const answers = [
+    "至少需要先保留基本生活保障，再讨论成长机会是否值得承担风险。",
+    "我会先说结论，再说明生活风险可控这个前提，最后解释成长为什么能扩大后续选择。",
+    "如果对方担心稳定性，我会承认稳定能降低短期风险，再说明这个判断只适用于基本保障已经满足时。",
+  ];
+
+  for (const answer of answers) {
+    const input = page.getByRole("textbox", { name: "追问回答" });
+    await expect(input).toBeVisible();
+    await input.fill(answer);
+    await page.getByRole("button", { name: "发送回答" }).click();
+    const continueButton = page.getByRole("button", { name: "进入最终复述" });
+    try {
+      await expect(continueButton).toBeVisible({ timeout: 2_000 });
+      return;
+    } catch {
+      continue;
+    }
+  }
+
+  await expect(
+    page.getByRole("button", { name: "进入最终复述" }),
+  ).toBeVisible();
 }
 
 async function completeMockTraining(page: Page) {
