@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { coachingFeedbackSchema } from "@/features/training/schemas/coaching";
 import { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
 import { draftDiagnosisSchema } from "@/features/training/schemas/diagnosis";
 import { trainingTopicSchema } from "@/features/training/schemas/topic";
@@ -81,6 +82,11 @@ describe("mockProvider", () => {
       new Set(diagnosis.scores.map(({ dimension }) => dimension)).size,
     ).toBe(8);
     expect(diagnosis.coverageCount).toBe(8);
+    expect(diagnosis.plannedCoachingRounds.length).toBeGreaterThanOrEqual(1);
+    expect(diagnosis.plannedCoachingRounds.length).toBeLessThanOrEqual(3);
+    expect(
+      new Set(diagnosis.plannedCoachingRounds.map((round) => round.id)).size,
+    ).toBe(diagnosis.plannedCoachingRounds.length);
     const average = (scores: typeof diagnosis.scores) =>
       Math.round(
         (scores.reduce((sum, { score }) => sum + score, 0) / scores.length) *
@@ -92,6 +98,24 @@ describe("mockProvider", () => {
     );
     expect(Object.values(diagnosis).join("")).not.toContain(
       "下面是一篇完整范文",
+    );
+  });
+
+  it("returns coaching feedback without ghostwriting a final answer", async () => {
+    const diagnosis = diagnosisFixture();
+    const feedback = await mockProvider.coachRound({
+      topic: trainingTopic,
+      draftText: "我认为成长更重要，因为机会更多。",
+      diagnosis,
+      plannedRound: diagnosis.plannedCoachingRounds[0],
+      previousRounds: [],
+      userAnswer: "风险比较大，所以要谨慎。",
+      attempt: 1,
+    });
+
+    expect(coachingFeedbackSchema.parse(feedback)).toEqual(feedback);
+    expect(JSON.stringify(feedback)).not.toMatch(
+      /完整范文|完整改写如下|你可以这样写/,
     );
   });
 

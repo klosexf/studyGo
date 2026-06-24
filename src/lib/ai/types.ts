@@ -1,6 +1,8 @@
 import type {
+  CoachingFeedback,
   Difficulty,
   DraftDiagnosis,
+  PlannedCoachingRound,
   ProviderId,
   RewriteComparison,
   ScenarioType,
@@ -28,6 +30,16 @@ export interface RewriteComparisonInput {
   diagnosis: DraftDiagnosis;
 }
 
+export interface CoachingInput {
+  topic: TrainingTopic;
+  draftText: string;
+  diagnosis: DraftDiagnosis;
+  plannedRound: PlannedCoachingRound;
+  previousRounds: CoachingFeedback[];
+  userAnswer: string;
+  attempt: number;
+}
+
 export interface ConnectionTestResult {
   ok: true;
   provider: ProviderId;
@@ -37,6 +49,7 @@ export interface ConnectionTestResult {
 export interface AIProvider {
   generateTopic(input: TopicGenerationInput): Promise<TrainingTopic>;
   diagnoseDraft(input: DraftDiagnosisInput): Promise<DraftDiagnosis>;
+  coachRound(input: CoachingInput): Promise<CoachingFeedback>;
   compareRewrite(input: RewriteComparisonInput): Promise<RewriteComparison>;
   testConnection(): Promise<ConnectionTestResult>;
 }

@@ -1,6 +1,7 @@
 import { lookup } from "node:dns/promises";
 import type { z } from "zod";
 
+import { coachingFeedbackSchema } from "@/features/training/schemas/coaching";
 import { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
 import {
   completeDimensionScoresSchema,
@@ -18,6 +19,10 @@ import {
   COMPARISON_FORMAT_DESCRIPTION,
 } from "@/lib/ai/prompts/comparison";
 import {
+  buildCoachingPrompt,
+  COACHING_FORMAT_DESCRIPTION,
+} from "@/lib/ai/prompts/coaching";
+import {
   buildDiagnosisPrompt,
   DIAGNOSIS_FORMAT_DESCRIPTION,
 } from "@/lib/ai/prompts/diagnosis";
@@ -34,6 +39,7 @@ import {
 } from "@/lib/ai/provider-url";
 import type {
   AIProvider,
+  CoachingInput,
   DraftDiagnosisInput,
   RewriteComparisonInput,
   TopicGenerationInput,
@@ -410,6 +416,16 @@ export function createChatCompletionsProvider({
         DIAGNOSIS_FORMAT_DESCRIPTION,
         draftDiagnosisSchema,
         normalizeDiagnosis,
+        0.2,
+      );
+    },
+
+    coachRound(input: CoachingInput) {
+      return generateAndParse(
+        buildCoachingPrompt(input),
+        COACHING_FORMAT_DESCRIPTION,
+        coachingFeedbackSchema,
+        (raw) => raw,
         0.2,
       );
     },

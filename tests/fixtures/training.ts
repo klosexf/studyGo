@@ -1,4 +1,5 @@
 import type {
+  CoachingFeedback,
   DraftDiagnosis,
   RewriteComparison,
   TrainingDimension,
@@ -50,6 +51,20 @@ export const plannedCoachingRoundFixture = {
   question: "这个观点在什么条件下成立？",
   successCriteria: "用户说出至少一个判断边界。",
 } as const;
+
+export function coachingFeedbackFixture(
+  overrides: Partial<CoachingFeedback> = {},
+): CoachingFeedback {
+  return {
+    roundId: plannedCoachingRoundFixture.id,
+    attempt: 1,
+    status: "passed",
+    feedback: "这次回答补出了判断边界。",
+    capturedUserMaterial: ["至少需要基本生活保障"],
+    gap: "后续仍可补充为什么这个条件足够。",
+    ...overrides,
+  };
+}
 
 export function diagnosisFixture(
   overrides: Partial<DraftDiagnosis> = {},

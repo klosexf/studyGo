@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  coachingFeedbackSchema,
+  plannedCoachingRoundSchema,
+} from "@/features/training/schemas/coaching";
 import { draftDiagnosisSchema } from "@/features/training/schemas/diagnosis";
 import {
   trainingDimensionSchema,
@@ -49,6 +53,17 @@ export const diagnosisRequestSchema = z.object({
   draftText: requiredText.max(400),
 });
 
+export const coachingRequestSchema = z.object({
+  provider: providerConfigSchema,
+  topic: trainingTopicSchema,
+  draftText: requiredText.max(400),
+  diagnosis: draftDiagnosisSchema,
+  plannedRound: plannedCoachingRoundSchema,
+  previousRounds: z.array(coachingFeedbackSchema).max(3).default([]),
+  userAnswer: requiredText.max(1000),
+  attempt: z.number().int().min(1).max(3),
+});
+
 export const comparisonRequestSchema = z.object({
   provider: providerConfigSchema,
   topic: trainingTopicSchema,
@@ -62,4 +77,5 @@ export const providerTestRequestSchema = providerConfigSchema;
 export type ProviderConfig = z.infer<typeof providerConfigSchema>;
 export type TopicRequest = z.infer<typeof topicRequestSchema>;
 export type DiagnosisRequest = z.infer<typeof diagnosisRequestSchema>;
+export type CoachingRequest = z.infer<typeof coachingRequestSchema>;
 export type ComparisonRequest = z.infer<typeof comparisonRequestSchema>;

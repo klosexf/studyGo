@@ -9,7 +9,8 @@ export function buildDiagnosisPrompt(input: DraftDiagnosisInput) {
     "输出严格 JSON，不要 Markdown。",
     "必须为以下 8 个英文维度各给一次 1-5 分及简短 evidence：",
     TRAINING_DIMENSIONS.join(", "),
-    "字段：summary, keyLogicIssue, keyExpressionIssue, socraticQuestion, rewriteTask, scores, confidence。",
+    "字段：summary, keyLogicIssue, keyExpressionIssue, socraticQuestion, rewriteTask, scores, confidence, plannedCoachingRounds。",
+    "plannedCoachingRounds 必须包含 1-3 个训练点；每个训练点包含 id, objective, targetDimension, question, successCriteria。",
     "<user_input>",
     JSON.stringify({
       topic: input.topic,
@@ -20,4 +21,4 @@ export function buildDiagnosisPrompt(input: DraftDiagnosisInput) {
 }
 
 export const DIAGNOSIS_FORMAT_DESCRIPTION =
-  "DraftDiagnosis JSON 的必要字段；scores 必须覆盖 8 个英文维度且不重复。不要输出聚合分数、coverageCount 或 source。";
+  "DraftDiagnosis JSON 的必要字段；scores 必须覆盖 8 个英文维度且不重复；plannedCoachingRounds 必须为 1-3 个不重复训练点。不要输出聚合分数、coverageCount 或 source。";

@@ -5,6 +5,7 @@ import {
   createTrainingApi,
 } from "@/features/training/services/training-api";
 import {
+  coachingFeedbackFixture,
   comparisonFixture,
   diagnosisFixture,
   mockProviderConfig,
@@ -144,8 +145,10 @@ describe("training API client", () => {
     expect(JSON.stringify(networkError)).not.toContain("secret-key");
   });
 
-  it("parses diagnosis and comparison endpoint responses", async () => {
-    const responses = [diagnosisFixture(), comparisonFixture()];
+  it("parses diagnosis, coaching, and comparison endpoint responses", async () => {
+    const diagnosis = diagnosisFixture();
+    const coachingFeedback = coachingFeedbackFixture();
+    const responses = [diagnosis, coachingFeedback, comparisonFixture()];
     const api = createTrainingApi({
       fetcher: vi.fn(async () => Response.json(responses.shift())),
     });
@@ -156,7 +159,19 @@ describe("training API client", () => {
         topic: trainingTopic,
         draftText: "初稿",
       }),
-    ).resolves.toEqual(diagnosisFixture());
+    ).resolves.toEqual(diagnosis);
+    await expect(
+      api.coachRound({
+        provider: mockProviderConfig,
+        topic: trainingTopic,
+        draftText: "初稿",
+        diagnosis,
+        plannedRound: diagnosis.plannedCoachingRounds[0],
+        previousRounds: [],
+        userAnswer: "至少需要基本生活保障。",
+        attempt: 1,
+      }),
+    ).resolves.toEqual(coachingFeedback);
     await expect(
       api.compareRewrite({
         provider: mockProviderConfig,

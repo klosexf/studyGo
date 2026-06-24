@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { POST as compareRewrite } from "@/app/api/ai/comparison/route";
+import { POST as coachRound } from "@/app/api/ai/coaching/route";
 import { POST as diagnoseDraft } from "@/app/api/ai/diagnosis/route";
 import { POST as generateTopic } from "@/app/api/ai/topic/route";
 import { POST as testProvider } from "@/app/api/providers/test/route";
@@ -76,6 +77,28 @@ describe("AI routes", () => {
     });
   });
 
+  it("returns coaching feedback with the Mock provider", async () => {
+    const diagnosis = diagnosisFixture();
+    const response = await coachRound(
+      jsonRequest("http://localhost/api/ai/coaching", {
+        provider: mockProviderConfig,
+        topic: trainingTopic,
+        draftText: "我认为成长更重要，因为机会更多。",
+        diagnosis,
+        plannedRound: diagnosis.plannedCoachingRounds[0],
+        previousRounds: [],
+        userAnswer: "至少需要基本生活保障。",
+        attempt: 1,
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      roundId: diagnosis.plannedCoachingRounds[0].id,
+      attempt: 1,
+    });
+  });
+
   it("tests a Mock provider without network access", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -95,6 +118,7 @@ describe("AI routes", () => {
   it.each([
     [generateTopic, "/api/ai/topic"],
     [diagnoseDraft, "/api/ai/diagnosis"],
+    [coachRound, "/api/ai/coaching"],
     [compareRewrite, "/api/ai/comparison"],
     [testProvider, "/api/providers/test"],
   ] as const)("returns 400 for an invalid request", async (handler, path) => {

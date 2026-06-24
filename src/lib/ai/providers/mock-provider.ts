@@ -1,10 +1,12 @@
 import { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
+import { coachingFeedbackSchema } from "@/features/training/schemas/coaching";
 import {
   draftDiagnosisSchema,
   type dimensionScoreSchema,
 } from "@/features/training/schemas/diagnosis";
 import {
   comparisonRequestSchema,
+  coachingRequestSchema,
   diagnosisRequestSchema,
   topicRequestSchema,
 } from "@/features/training/schemas/requests";
@@ -14,7 +16,7 @@ import {
   type DraftDiagnosis,
   type TrainingDimension,
 } from "@/features/training/types";
-import type { AIProvider } from "@/lib/ai/types";
+import type { AIProvider, CoachingInput } from "@/lib/ai/types";
 import { roundOneDecimal } from "@/lib/analytics/statistics";
 import type { z } from "zod";
 
@@ -280,6 +282,26 @@ function plannedRoundFor(dimension: TrainingDimension) {
   };
 }
 
+function answerAdvancesRound(input: CoachingInput) {
+  const features = analyzeText(input.userAnswer);
+  switch (input.plannedRound.targetDimension) {
+    case "hiddenAssumption":
+      return features.assumption || /月|条件|前提|除非|如果/.test(input.userAnswer);
+    case "argumentSufficiency":
+    case "specificLanguage":
+      return features.example || features.reason;
+    case "structureClarity":
+    case "smoothConnection":
+      return features.connection || /先|后|首先|其次/.test(input.userAnswer);
+    case "counterargumentAwareness":
+      return features.counterargument;
+    case "clearConclusion":
+      return features.conclusion;
+    case "conciseness":
+      return features.length > 0 && features.length <= 160;
+  }
+}
+
 export const mockProvider: AIProvider = {
   async generateTopic(rawInput) {
     const input = topicRequestSchema.parse({
@@ -360,6 +382,32 @@ export const mockProvider: AIProvider = {
       confidence: confidenceFor(features.length),
       source: "mock",
       plannedCoachingRounds: [plannedRoundFor(weakestDimension)],
+    });
+  },
+
+  async coachRound(rawInput) {
+    const input = coachingRequestSchema.parse({
+      ...rawInput,
+      provider: MOCK_CONFIG,
+    });
+    const passed = answerAdvancesRound(input);
+    const status =
+      passed ? "passed" : input.attempt >= 3 ? "recorded_weakness" : "needs_followup";
+    const followUpQuestion =
+      status === "needs_followup"
+        ? `还差一步：${input.plannedRound.successCriteria} 请把回答缩小到一个具体条件、事实或顺序。`
+        : undefined;
+
+    return coachingFeedbackSchema.parse({
+      roundId: input.plannedRound.id,
+      attempt: input.attempt,
+      status,
+      feedback: passed
+        ? "这次回答已经推进了本轮训练目标。"
+        : "这次回答保留了想法，但还没有充分推进本轮目标。",
+      capturedUserMaterial: [input.userAnswer.slice(0, 300)],
+      gap: passed ? "后续可在最终复述中压缩表达。" : input.plannedRound.successCriteria,
+      followUpQuestion,
     });
   },
 

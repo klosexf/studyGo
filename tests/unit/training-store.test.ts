@@ -32,6 +32,7 @@ import type {
 } from "@/features/training/types";
 import type { TrainingRepository } from "@/lib/storage/training-repository";
 import {
+  coachingFeedbackFixture,
   comparisonFixture,
   diagnosisFixture,
   trainingTopic,
@@ -50,6 +51,7 @@ function createApi(): TrainingApi {
   return {
     generateTopic: vi.fn(async () => trainingTopic),
     diagnoseDraft: vi.fn(async () => diagnosisFixture()),
+    coachRound: vi.fn(async () => coachingFeedbackFixture()),
     compareRewrite: vi.fn(async () => comparisonFixture()),
     testProvider: vi.fn(async () => ({
       ok: true as const,

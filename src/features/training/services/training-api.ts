@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { coachingFeedbackSchema } from "@/features/training/schemas/coaching";
 import { rewriteComparisonSchema } from "@/features/training/schemas/comparison";
 import { draftDiagnosisSchema } from "@/features/training/schemas/diagnosis";
 import type {
+  CoachingRequest,
   ComparisonRequest,
   DiagnosisRequest,
   ProviderConfig,
@@ -10,6 +12,7 @@ import type {
 } from "@/features/training/schemas/requests";
 import { trainingTopicSchema } from "@/features/training/schemas/topic";
 import type {
+  CoachingFeedback,
   DraftDiagnosis,
   RewriteComparison,
   TrainingTopic,
@@ -67,6 +70,10 @@ export interface TrainingApi {
     request: DiagnosisRequest,
     signal?: AbortSignal,
   ): Promise<DraftDiagnosis>;
+  coachRound(
+    request: CoachingRequest,
+    signal?: AbortSignal,
+  ): Promise<CoachingFeedback>;
   compareRewrite(
     request: ComparisonRequest,
     signal?: AbortSignal,
@@ -102,6 +109,14 @@ export function createTrainingApi(options: {
         "/api/ai/diagnosis",
         request,
         draftDiagnosisSchema,
+        signal,
+      ),
+    coachRound: (request, signal) =>
+      post(
+        fetcher,
+        "/api/ai/coaching",
+        request,
+        coachingFeedbackSchema,
         signal,
       ),
     compareRewrite: (request, signal) =>
